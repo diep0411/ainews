@@ -1,0 +1,20 @@
+import 'package:ai_new/tadBarpage/all_articles.dart';
+import 'package:flutter/material.dart';
+
+class BusinessPage extends StatefulWidget {
+  const BusinessPage({super.key});
+
+  @override
+  State<BusinessPage> createState() => _BusinessPageState();
+}
+
+class _BusinessPageState extends State<BusinessPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Text('Business content đúng'),
+      ),
+    );
+  }
+}
