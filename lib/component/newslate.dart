@@ -10,11 +10,7 @@ class NewsLateCard extends StatelessWidget {
   final NewsModel article;
   final List<NewsModel>? articlePool;
 
-  const NewsLateCard({
-    super.key,
-    required this.article,
-    this.articlePool,
-  });
+  const NewsLateCard({super.key, required this.article, this.articlePool});
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +28,7 @@ class NewsLateCard extends StatelessWidget {
             builder: (context) => ArticleDetailPage(
               imageUrl: article.imageUrl,
               sourceName: article.sourceName,
+              articleUrl: article.articleUrl,
               time: publishedTime,
               title: article.title,
               description: article.description ?? 'No description',

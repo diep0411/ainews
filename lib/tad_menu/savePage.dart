@@ -2,6 +2,7 @@
 import 'package:ai_new/content.dart/all_content.dart';
 import 'package:ai_new/homePage.dart';
 import 'package:ai_new/models/news_model.dart';
+import 'package:ai_new/services/report_service.dart';
 import 'package:ai_new/services/save_service.dart';
 import 'package:ai_new/utils/article_date_utils.dart';
 import 'package:flutter/material.dart';
@@ -11,90 +12,100 @@ class SavePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final savedArticles = SaveService.savedArticles;
+    return ValueListenableBuilder<int>(
+      valueListenable: ReportService.reportsVersion,
+      builder: (context, _, __) {
+        final savedArticles = ReportService.filterUnreported(
+          SaveService.savedArticles,
+        );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Saved'),
-        centerTitle: false,
-        elevation: 0,
-      ),
-      backgroundColor: Colors.grey.shade100,
-      body: savedArticles.isEmpty
-          ? Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'No Saved Articles Yet',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Articles you save for later will appear \n'
-                      'here. Start exploring to find stories you love.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 16),
-                    // ElevatedButton.icon(
-                    //   onPressed: () {
-                    //     if (Navigator.of(context).canPop()) {
-                    //       Navigator.of(context).pop();
-                    //       return;
-                    //     }
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Saved'),
+            centerTitle: false,
+            elevation: 0,
+          ),
+          backgroundColor: Colors.grey.shade100,
+          body: savedArticles.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'No Saved Articles Yet',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Articles you save for later will appear \n'
+                          'here. Start exploring to find stories you love.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 16),
+                        // ElevatedButton.icon(
+                        //   onPressed: () {
+                        //     if (Navigator.of(context).canPop()) {
+                        //       Navigator.of(context).pop();
+                        //       return;
+                        //     }
 
-                    //     Navigator.of(context).pushReplacement(
-                    //       MaterialPageRoute(
-                    //         builder: (context) => const Homepage(),
-                    //       ),
-                    //     );
-                    //   },
-                    //   icon: const Icon(Icons.explore_outlined),
-                    //   label: const Text('Start Exploring'),
-                    // ),
-                    InkWell(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const Homepage(),
+                        //     Navigator.of(context).pushReplacement(
+                        //       MaterialPageRoute(
+                        //         builder: (context) => const Homepage(),
+                        //       ),
+                        //     );
+                        //   },
+                        //   icon: const Icon(Icons.explore_outlined),
+                        //   label: const Text('Start Exploring'),
+                        // ),
+                        InkWell(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const Homepage(),
+                            ),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Start Exploring',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text('Start Exploring',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            )),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  itemCount: savedArticles.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    final article = savedArticles[index];
+                    return _buildSavedArticleCard(context, article);
+                  },
                 ),
-              ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              itemCount: savedArticles.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                final article = savedArticles[index];
-                return _buildSavedArticleCard(context, article);
-              },
-            ),
+        );
+      },
     );
   }
 
@@ -107,6 +118,7 @@ class SavePage extends StatelessWidget {
             builder: (context) => ArticleDetailPage(
               imageUrl: article.imageUrl,
               sourceName: article.sourceName,
+              articleUrl: article.articleUrl,
               time:
                   ArticleDateUtils.formatPublishedDate(article.publishedAt) ??
                   'Unknown time',

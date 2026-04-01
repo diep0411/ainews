@@ -26,6 +26,7 @@ class TopArticleCard extends StatelessWidget {
             builder: (context) => ArticleDetailPage(
               imageUrl: article.imageUrl,
               sourceName: article.sourceName,
+              articleUrl: article.articleUrl,
               time:
                   ArticleDateUtils.formatPublishedDate(article.publishedAt) ??
                   'Unknown time',

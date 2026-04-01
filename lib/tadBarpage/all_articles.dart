@@ -2,6 +2,7 @@ import 'package:ai_new/component/newslate.dart';
 import 'package:ai_new/component/top_article_card.dart';
 import 'package:ai_new/models/news_model.dart';
 import 'package:ai_new/services/news_service.dart';
+import 'package:ai_new/services/report_service.dart';
 import 'package:flutter/material.dart';
 
 class AllArticles extends StatefulWidget {
@@ -46,15 +47,22 @@ class _AllArticlesState extends State<AllArticles> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: _buildBody(),
-      ),
+    return ValueListenableBuilder<int>(
+      valueListenable: ReportService.reportsVersion,
+      builder: (context, _, __) {
+        return Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildBody(),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildBody() {
+    final visibleArticles = ReportService.filterUnreported(_articles);
+
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -83,7 +91,7 @@ class _AllArticlesState extends State<AllArticles> {
       );
     }
 
-    if (_articles.isEmpty) {
+    if (visibleArticles.isEmpty) {
       return const Center(child: Text('No news to display.'));
     }
 
@@ -117,14 +125,14 @@ class _AllArticlesState extends State<AllArticles> {
                 ],
               ),
             ),
-            ..._articles
+            ...visibleArticles
                 .take(3)
                 .map(
                   (article) => Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: TopArticleCard(
                       article: article,
-                      articlePool: _articles,
+                      articlePool: visibleArticles,
                     ),
                   ),
                 ),
@@ -134,14 +142,14 @@ class _AllArticlesState extends State<AllArticles> {
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            ..._articles
+            ...visibleArticles
                 .take(7)
                 .map(
                   (article) => Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: NewsLateCard(
                       article: article,
-                      articlePool: _articles,
+                      articlePool: visibleArticles,
                     ),
                   ),
                 ),
@@ -151,6 +159,4 @@ class _AllArticlesState extends State<AllArticles> {
       ),
     );
   }
-
 }
-

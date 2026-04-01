@@ -2,15 +2,20 @@ import 'package:ai_new/component/article_image.dart';
 import 'package:ai_new/component/newslate.dart';
 import 'package:ai_new/models/news_model.dart';
 import 'package:ai_new/services/ai_mode_service.dart';
+import 'package:ai_new/services/font_service.dart';
 import 'package:ai_new/services/histories_service.dart';
+import 'package:ai_new/services/report_service.dart';
 import 'package:ai_new/services/save_service.dart';
 import 'package:ai_new/services/translation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ArticleDetailPage extends StatefulWidget {
   final String? imageUrl;
   final String? sourceName;
+  final String? articleUrl;
   final String time;
   final String title;
   final String description;
@@ -21,6 +26,7 @@ class ArticleDetailPage extends StatefulWidget {
     super.key,
     required this.imageUrl,
     required this.sourceName,
+    this.articleUrl,
     required this.time,
     required this.title,
     required this.description,
@@ -41,10 +47,17 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
   int _speechStart = 0;
   int _speechEnd = 0;
   int _lastProgressMs = 0;
+  ArticleFontLevel _fontLevel = ArticleFontLevel.medium;
   late String _displayTitle;
   late String _displayDescription;
   String? _displayContent;
   final FlutterTts _tts = FlutterTts();
+
+  double get _articleFontSize => FontService.bodyFontSize(_fontLevel);
+
+  double get _titleFontSize => FontService.titleFontSize(_fontLevel);
+
+  double get _metaFontSize => FontService.metaFontSize(_fontLevel);
 
   NewsModel get _currentArticle => NewsModel(
     title: _displayTitle,
@@ -53,7 +66,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
     imageUrl: widget.imageUrl,
     sourceName: widget.sourceName,
     publishedAt: null,
-    articleUrl: null,
+    articleUrl: widget.articleUrl,
   );
 
   List<NewsModel> get _relatedArticles {
@@ -338,8 +351,8 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
     if (contentText.isEmpty) {
       return Text(
         fallback,
-        style: const TextStyle(
-          fontSize: 16,
+        style: TextStyle(
+          fontSize: _articleFontSize,
           height: 1.6,
           color: Colors.black54,
         ),
@@ -348,7 +361,11 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
     return _buildHighlightedSection(
       text: contentText,
       sectionStartOffset: _contentStartOffset,
-      style: const TextStyle(fontSize: 16, height: 1.6, color: Colors.black54),
+      style: TextStyle(
+        fontSize: _articleFontSize,
+        height: 1.6,
+        color: Colors.black54,
+      ),
     );
   }
 
@@ -371,6 +388,12 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
         ),
         foregroundColor: Colors.black,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: _showMoreOptionsDialog,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -380,8 +403,8 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
             _buildHighlightedSection(
               text: _displayTitle,
               sectionStartOffset: 0,
-              style: const TextStyle(
-                fontSize: 28,
+              style: TextStyle(
+                fontSize: _titleFontSize,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
@@ -400,9 +423,9 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
               children: [
                 Text(
                   '${widget.sourceName ?? 'Unknown source'} • ${widget.time}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.blue,
-                    fontSize: 14,
+                    fontSize: _metaFontSize,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -459,10 +482,15 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                   'SAVE',
                   onTap: () => _saveArticle(context),
                 ),
-                _iconfunc(const Icon(Icons.share), 'SHARE'),
+                _iconfunc(
+                  const Icon(Icons.share),
+                  'SHARE',
+                  onTap: _shareArticle,
+                ),
                 _iconfunc(
                   const Icon(Icons.open_in_new),
                   '     VIEW \n ORIGINAL',
+                  onTap: _openOriginalArticle,
                 ),
               ],
             ),
@@ -484,8 +512,8 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
             _buildHighlightedSection(
               text: _cleanDescription,
               sectionStartOffset: _descriptionStartOffset,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: _articleFontSize,
                 height: 1.6,
                 color: Colors.black87,
               ),
@@ -546,6 +574,139 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _shareArticle() async {
+    if (!mounted) return;
+
+    final articleUrl = (widget.articleUrl ?? '').trim();
+    if (articleUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This article does not have a shareable link.'),
+        ),
+      );
+      return;
+    }
+
+    final shareText = '${widget.title}\n$articleUrl';
+    await SharePlus.instance.share(ShareParams(text: shareText));
+  }
+
+  Future<void> _openOriginalArticle() async {
+    if (!mounted) return;
+
+    final articleUrl = (widget.articleUrl ?? '').trim();
+    if (articleUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This article does not have an original link.'),
+        ),
+      );
+      return;
+    }
+
+    final uri = Uri.tryParse(articleUrl);
+    if (uri == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('The article link is invalid.')),
+      );
+      return;
+    }
+
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open the article in browser.')),
+      );
+    }
+  }
+
+  Future<void> _showMoreOptionsDialog() async {
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          alignment: Alignment.topRight,
+          insetPadding: const EdgeInsets.fromLTRB(72, 12, 12, 0),
+          title: const Text('Options'),
+          contentPadding: const EdgeInsets.only(top: 8, bottom: 8),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.format_size),
+                title: const Text('Font'),
+                onTap: () {
+                  Navigator.pop(dialogContext);
+                  _handleFontSelection();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.report_gmailerrorred),
+                title: const Text('Report'),
+                onTap: () {
+                  Navigator.pop(dialogContext);
+                  _handleReportSelection();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleFontSelection() async {
+    if (!mounted) return;
+
+    final selected = await FontService.showFontDialog(
+      context,
+      currentLevel: _fontLevel,
+    );
+
+    if (!mounted || selected == null) return;
+
+    setState(() {
+      _fontLevel = selected;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Font updated: ${FontService.levelLabel(selected)}'),
+        duration: const Duration(milliseconds: 900),
+      ),
+    );
+  }
+
+  Future<void> _handleReportSelection() async {
+    if (!mounted) return;
+
+    final selectedReason = await ReportService.showReportDialog(
+      context,
+      title: _displayTitle,
+      description: _displayDescription,
+      imageUrl: widget.imageUrl,
+    );
+
+    if (!mounted || selectedReason == null) return;
+
+    ReportService.markReportedByData(
+      title: widget.title,
+      sourceName: widget.sourceName,
+      articleUrl: widget.articleUrl,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Reported: $selectedReason'),
+        duration: const Duration(milliseconds: 1200),
+      ),
+    );
+
+    Navigator.pop(context);
   }
 
   Widget _iconfunc(Icon icon, String text, {VoidCallback? onTap}) {
