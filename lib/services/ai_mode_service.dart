@@ -38,25 +38,44 @@ Future<void> aiMode({
   String? preparedText,
 }) async {
   if (isReading) {
-    await tts.stop();
-    setReading(false);
-    setSpeaking(false);
+    try {
+      await tts.stop();
+    } finally {
+      setReading(false);
+      setSpeaking(false);
+      setLoading(false);
+    }
     return;
   }
 
   setLoading(true);
+  try {
+    final textToSpeak =
+        preparedText ??
+        buildAiModeSpeechText(
+          title: title,
+          description: description,
+          content: content,
+        );
 
-  final textToSpeak =
-      preparedText ??
-      buildAiModeSpeechText(
-        title: title,
-        description: description,
-        content: content,
-      );
+    if (textToSpeak.trim().isEmpty) {
+      setReading(false);
+      setSpeaking(false);
+      setLoading(false);
+      return;
+    }
 
-  setReading(true);
-  setLoading(false);
-  await tts.speak(textToSpeak);
+    // Ensure a previous utterance is fully stopped before starting new speech.
+    await tts.stop();
+    setReading(true);
+    await tts.speak(textToSpeak);
+    setLoading(false);
+  } catch (_) {
+    setReading(false);
+    setSpeaking(false);
+    setLoading(false);
+    rethrow;
+  }
 }
 
 String buildAiModeSpeechText({
@@ -64,19 +83,41 @@ String buildAiModeSpeechText({
   required String description,
   String? content,
 }) {
-  final buffer = StringBuffer();
-  buffer.write(title);
-  buffer.write('. ');
+  String normalizeForTts(String input) {
+    var value = input;
+    value = value.replaceAll(RegExp(r'https?://\S+'), '');
+    value = value.replaceAll(RegExp(r'www\.\S+'), '');
+    value = value.replaceAll(RegExp(r'<[^>]*>'), ' ');
+    value = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return value;
+  }
 
-  if (description.trim().isNotEmpty) {
-    buffer.write(description.trim());
+  final buffer = StringBuffer();
+  final cleanTitle = normalizeForTts(title);
+  final cleanDescription = normalizeForTts(description);
+  final cleanContent = normalizeForTts(
+    (content ?? '').replaceAll(RegExp(r'\[\+\d+ chars\]'), ''),
+  );
+
+  if (cleanTitle.isNotEmpty) {
+    buffer.write(cleanTitle);
     buffer.write('. ');
   }
 
-  if ((content ?? '').trim().isNotEmpty) {
-    final clean = content!.replaceAll(RegExp(r'\[\+\d+ chars\]'), '').trim();
-    buffer.write(clean);
+  if (cleanDescription.isNotEmpty) {
+    buffer.write(cleanDescription);
+    buffer.write('. ');
   }
 
-  return buffer.toString();
+  if (cleanContent.isNotEmpty) {
+    buffer.write(cleanContent);
+  }
+
+  final fullText = buffer.toString().trim();
+  const maxChars = 3500;
+  if (fullText.length <= maxChars) {
+    return fullText;
+  }
+
+  return '${fullText.substring(0, maxChars)}...';
 }

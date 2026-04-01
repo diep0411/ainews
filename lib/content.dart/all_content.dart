@@ -40,6 +40,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
   bool _ttsLoading = false;
   int _speechStart = 0;
   int _speechEnd = 0;
+  int _lastProgressMs = 0;
   late String _displayTitle;
   late String _displayDescription;
   String? _displayContent;
@@ -148,6 +149,9 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
       },
       onComplete: () {
         if (mounted) {
+          // Ignore stale completion callbacks that may arrive before speech starts.
+          if (!_isReading) return;
+          if (!_isSpeaking && _speechEnd == 0) return;
           setState(() {
             _isSpeaking = false;
             _isReading = false;
@@ -168,7 +172,14 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
       },
       onProgress: (startOffset, endOffset, _) {
         if (!mounted) return;
+
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final shouldUpdate =
+            (now - _lastProgressMs) >= 70 || endOffset >= _speechEnd;
+        if (!shouldUpdate) return;
+
         setState(() {
+          _lastProgressMs = now;
           _speechStart = startOffset;
           _speechEnd = endOffset;
         });
@@ -183,32 +194,65 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
       content: _displayContent,
     );
 
-    await aiMode(
-      tts: _tts,
-      isReading: _isReading,
-      setReading: (value) {
-        if (!mounted) return;
-        setState(() {
-          _isReading = value;
-          if (!value) {
-            _speechStart = 0;
-            _speechEnd = 0;
-          }
-        });
-      },
-      setSpeaking: (value) {
-        if (!mounted) return;
-        setState(() => _isSpeaking = value);
-      },
-      setLoading: (value) {
-        if (!mounted) return;
-        setState(() => _ttsLoading = value);
-      },
-      title: widget.title,
-      description: _displayDescription,
-      content: _displayContent,
-      preparedText: speechText,
-    );
+    if (!_isReading && speechText.trim().isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No readable content found for AI mode.')),
+      );
+      return;
+    }
+
+    if (!_isReading) {
+      setState(() {
+        _speechStart = 0;
+        _speechEnd = 0;
+        _lastProgressMs = 0;
+      });
+    }
+
+    try {
+      await aiMode(
+        tts: _tts,
+        isReading: _isReading,
+        setReading: (value) {
+          if (!mounted) return;
+          setState(() {
+            _isReading = value;
+            if (!value) {
+              _speechStart = 0;
+              _speechEnd = 0;
+              _lastProgressMs = 0;
+            }
+          });
+        },
+        setSpeaking: (value) {
+          if (!mounted) return;
+          setState(() => _isSpeaking = value);
+        },
+        setLoading: (value) {
+          if (!mounted) return;
+          setState(() => _ttsLoading = value);
+        },
+        title: widget.title,
+        description: _displayDescription,
+        content: _displayContent,
+        preparedText: speechText,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isReading = false;
+        _isSpeaking = false;
+        _ttsLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'AI mode is temporarily unavailable. Please try again.',
+          ),
+        ),
+      );
+    }
   }
 
   String get _cleanDescription => _displayDescription.trim();
@@ -274,8 +318,9 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
             TextSpan(
               text: text.substring(localStart, localEnd),
               style: baseStyle.copyWith(
-                backgroundColor: const Color(0xFFB39DDB),
+                backgroundColor: const Color(0xFFFFEB3B),
                 color: Colors.black,
+                fontWeight: FontWeight.w700,
               ),
             ),
             TextSpan(text: text.substring(localEnd)),
@@ -309,6 +354,9 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
 
   @override
   void dispose() {
+    _isReading = false;
+    _isSpeaking = false;
+    _ttsLoading = false;
     _tts.stop();
     super.dispose();
   }
@@ -358,46 +406,40 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                InkWell(
-                  onTap: _ttsLoading ? null : _toggleTts,
-                  child: Container(
-                    height: 40,
-                    width: 122,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: _isReading ? Colors.red : Colors.blueAccent,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Center(
-                      child: _ttsLoading
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _isReading
-                                      ? Icons.stop_rounded
-                                      : Icons.record_voice_over_rounded,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _isReading ? 'STOP' : 'AI MODE',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
+                SizedBox(
+                  height: 42,
+                  child: ElevatedButton.icon(
+                    onPressed: _ttsLoading ? null : _toggleTts,
+                    icon: _ttsLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
                             ),
+                          )
+                        : Icon(
+                            _isReading
+                                ? Icons.stop_circle_outlined
+                                : Icons.graphic_eq_rounded,
+                            size: 18,
+                          ),
+                    label: Text(_isReading ? 'Stop' : 'AI Mode'),
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: _isReading
+                          ? Colors.red.shade600
+                          : Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
                     ),
                   ),
                 ),

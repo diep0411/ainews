@@ -1,5 +1,6 @@
 ﻿import 'package:ai_new/component/article_image.dart';
 import 'package:ai_new/content.dart/all_content.dart';
+import 'package:ai_new/homePage.dart';
 import 'package:ai_new/models/news_model.dart';
 import 'package:ai_new/services/save_service.dart';
 import 'package:ai_new/utils/article_date_utils.dart';
@@ -14,19 +15,74 @@ class SavePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Saved Articles'),
-        centerTitle: true,
+        title: const Text('Saved'),
+        centerTitle: false,
         elevation: 0,
       ),
       backgroundColor: Colors.grey.shade100,
       body: savedArticles.isEmpty
-          ? const Center(
+          ? Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Bạn chưa lưu bài viết nào.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'No Saved Articles Yet',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Articles you save for later will appear \n'
+                      'here. Start exploring to find stories you love.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    // ElevatedButton.icon(
+                    //   onPressed: () {
+                    //     if (Navigator.of(context).canPop()) {
+                    //       Navigator.of(context).pop();
+                    //       return;
+                    //     }
+
+                    //     Navigator.of(context).pushReplacement(
+                    //       MaterialPageRoute(
+                    //         builder: (context) => const Homepage(),
+                    //       ),
+                    //     );
+                    //   },
+                    //   icon: const Icon(Icons.explore_outlined),
+                    //   label: const Text('Start Exploring'),
+                    // ),
+                    InkWell(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const Homepage(),
+                        ),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text('Start Exploring',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            )),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             )
@@ -78,14 +134,14 @@ class SavePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ArticleImage(
-                imageUrl: article.imageUrl,
-                width: double.infinity,
-                height: 180,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(18),
-                  topRight: Radius.circular(18),
-                ),
+              imageUrl: article.imageUrl,
+              width: double.infinity,
+              height: 180,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
               ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
               child: Column(
@@ -114,7 +170,10 @@ class SavePage extends StatelessWidget {
                       const SizedBox(width: 10),
                       if (article.publishedAt != null)
                         Text(
-                          ArticleDateUtils.formatPublishedDate(article.publishedAt!) ?? '',
+                          ArticleDateUtils.formatPublishedDate(
+                                article.publishedAt!,
+                              ) ??
+                              '',
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 12,
