@@ -53,9 +53,9 @@ class SavePage extends StatelessWidget {
               sourceName: article.sourceName,
               time:
                   ArticleDateUtils.formatPublishedDate(article.publishedAt) ??
-                  'Không rõ thời gian',
+                  'Unknown time',
               title: article.title,
-              description: article.description ?? 'Không có mô tả',
+              description: article.description ?? 'No description',
               content: article.content,
               relatedArticles: SaveService.savedArticles,
             ),
@@ -103,7 +103,7 @@ class SavePage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          article.sourceName ?? 'Nguồn nội bật',
+                          article.sourceName ?? 'Unknown source',
                           style: TextStyle(
                             color: Colors.blue.shade800,
                             fontWeight: FontWeight.w600,

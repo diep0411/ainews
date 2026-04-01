@@ -287,7 +287,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
 
   Widget _buildFocusedContent() {
     final fallback =
-        'Không có nội dung chi tiết. Vui lòng mở bài gốc để đọc thêm.';
+        'No detailed content. Please open the original article to read more.';
     final contentText = _cleanContent;
 
     if (contentText.isEmpty) {
@@ -465,7 +465,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
             const SizedBox(height: 16),
             if (_relatedArticles.isNotEmpty) ...[
               const Text(
-                'Bài viết liên quan',
+                'Related Articles',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),

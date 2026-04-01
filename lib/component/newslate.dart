@@ -4,7 +4,7 @@ import 'package:ai_new/models/news_model.dart';
 import 'package:ai_new/utils/article_date_utils.dart';
 import 'package:flutter/material.dart';
 
-/// Card used in "Latest News" lists and "Bài viết liên quan" sections.
+/// Card used in "Latest News" lists and "Related articles" sections.
 /// Time labels are computed internally from [article.publishedAt].
 class NewsLateCard extends StatelessWidget {
   final NewsModel article;
@@ -19,10 +19,10 @@ class NewsLateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final relativeTime =
-        ArticleDateUtils.formatRelativeTime(article.publishedAt) ?? 'Không rõ';
+        ArticleDateUtils.formatRelativeTime(article.publishedAt) ?? 'Unknown';
     final publishedTime =
         ArticleDateUtils.formatPublishedDate(article.publishedAt) ??
-        'Không rõ thời gian';
+        'Unknown time';
 
     return InkWell(
       onTap: () {
@@ -34,7 +34,7 @@ class NewsLateCard extends StatelessWidget {
               sourceName: article.sourceName,
               time: publishedTime,
               title: article.title,
-              description: article.description ?? 'Không có mô tả',
+              description: article.description ?? 'No description',
               content: article.content,
               relatedArticles: articlePool,
             ),

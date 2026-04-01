@@ -21,7 +21,7 @@ class NewsModel {
     final source = json['source'] as Map<String, dynamic>?;
 
     return NewsModel(
-      title: json['title'] as String? ?? 'Không có tiêu đề',
+      title: json['title'] as String? ?? 'No title',
       description: json['description'] as String?,
       content: json['content'] as String?,
       imageUrl: json['urlToImage'] as String?,

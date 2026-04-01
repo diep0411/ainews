@@ -28,9 +28,9 @@ class TopArticleCard extends StatelessWidget {
               sourceName: article.sourceName,
               time:
                   ArticleDateUtils.formatPublishedDate(article.publishedAt) ??
-                  'Không rõ thời gian',
+                  'Unknown time',
               title: article.title,
-              description: article.description ?? 'Không có mô tả',
+              description: article.description ?? 'No description',
               content: article.content,
               relatedArticles: articlePool,
             ),

@@ -67,7 +67,7 @@ class _AllArticlesState extends State<AllArticles> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Không thể tải tin tức.',
+                'Unable to load news.',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -75,7 +75,7 @@ class _AllArticlesState extends State<AllArticles> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadArticles,
-                child: const Text('Thử lại'),
+                child: const Text('Try Again'),
               ),
             ],
           ),
@@ -84,7 +84,7 @@ class _AllArticlesState extends State<AllArticles> {
     }
 
     if (_articles.isEmpty) {
-      return const Center(child: Text('Không có tin tức nào để hiển thị.'));
+      return const Center(child: Text('No news to display.'));
     }
 
     return RefreshIndicator(

@@ -7,6 +7,116 @@ class NewsService {
   static const String _contentPath1 = 'assets/js/content-0-page-1.json';
   static const String _contentPath2 = 'assets/js/domain-1949198388-page-1.json';
   static const String _preConfigPath = 'assets/js/pre_france.txt.json';
+  static const List<String> _climateKeywords = <String>[
+    'climat',
+    'climate',
+    'environnement',
+    'environment',
+    'energetique',
+    'energy',
+    'energie',
+    'écologie',
+    'ecologie',
+    'ecology',
+    'carbone',
+    'carbon',
+    'emission',
+    'emissions',
+    'petrole',
+    'pétrole',
+    'gaz',
+    'electricite',
+    'électricité',
+    'electrique',
+    'électrique',
+    'pollution',
+    'biodiversite',
+    'biodiversité',
+    'rechauffement',
+    'réchauffement',
+    'météo',
+    'meteo',
+    'weather',
+    'durable',
+    'fossile',
+    'renewable',
+    'renouvelable',
+    'sécheresse',
+    'secheresse',
+    'inondation',
+    'transition énergétique',
+    'transition energetique',
+  ];
+  static const List<String> _businessKeywords = <String>[
+    'business',
+    'entreprise',
+    'entreprises',
+    'economie',
+    'économie',
+    'economic',
+    'economy',
+    'bourse',
+    'finance',
+    'financier',
+    'financiere',
+    'financière',
+    'financières',
+    'marché',
+    'marche',
+    'markets',
+    'investment',
+    'investissement',
+    'banque',
+    'bank',
+    'trade',
+    'commerce',
+    'tarif',
+    'tariffs',
+    'inflation',
+    'croissance',
+    'growth',
+    'startup',
+    'profits',
+    'revenue',
+    'budget',
+    'industry',
+    'industrie',
+  ];
+  static const List<String> _technologyKeywords = <String>[
+    'technologie',
+    'technology',
+    'tech',
+    'intelligence artificielle',
+    'artificial intelligence',
+    'ai',
+    'ia',
+    'nasa',
+    'spatial',
+    'space',
+    'lunaire',
+    'moon',
+    'mars',
+    'robot',
+    'robotics',
+    'software',
+    'hardware',
+    'smartphone',
+    'internet',
+    'cyber',
+    'cybersecurity',
+    'numérique',
+    'numerique',
+    'digital',
+    'satellite',
+    'rocket',
+    'fusée',
+    'fusee',
+    'innovation',
+    'google',
+    'apple',
+    'meta',
+    'tesla',
+  ];
 
   static Future<List<NewsModel>> fetchTopHeadlines() async {
     final preConfigRaw = await rootBundle.loadString(_preConfigPath);
@@ -59,6 +169,21 @@ class NewsService {
     });
 
     return parsed;
+  }
+
+  static Future<List<NewsModel>> fetchClimateArticles() async {
+    final articles = await fetchTopHeadlines();
+    return articles.where(_isClimateArticle).toList();
+  }
+
+  static Future<List<NewsModel>> fetchBusinessArticles() async {
+    final articles = await fetchTopHeadlines();
+    return articles.where(_isBusinessArticle).toList();
+  }
+
+  static Future<List<NewsModel>> fetchTechnologyArticles() async {
+    final articles = await fetchTopHeadlines();
+    return articles.where(_isTechnologyArticle).toList();
   }
 
   static Set<String> _parseAllowedSources(Map<String, dynamic> config) {
@@ -182,5 +307,28 @@ class NewsService {
     }
 
     return null;
+  }
+
+  static bool _isClimateArticle(NewsModel article) {
+    return _matchesKeywords(article, _climateKeywords);
+  }
+
+  static bool _isBusinessArticle(NewsModel article) {
+    return _matchesKeywords(article, _businessKeywords);
+  }
+
+  static bool _isTechnologyArticle(NewsModel article) {
+    return _matchesKeywords(article, _technologyKeywords);
+  }
+
+  static bool _matchesKeywords(NewsModel article, List<String> keywords) {
+    final haystack = [
+      article.title,
+      article.description ?? '',
+      article.content ?? '',
+      article.sourceName ?? '',
+    ].join(' ').toLowerCase();
+
+    return keywords.any(haystack.contains);
   }
 }
