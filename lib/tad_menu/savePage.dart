@@ -221,7 +221,7 @@ class SavePage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Saved',
+                        SaveService.savedAgoLabel(article),
                         style: TextStyle(
                           color: Colors.blue.shade700,
                           fontWeight: FontWeight.w700,

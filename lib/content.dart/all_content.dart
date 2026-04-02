@@ -668,7 +668,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
         builder: (_) => AiModeFeedPage(
           articles: feedArticles,
           initialIndex: 0,
-          autoPlayOnOpen: false,
+          autoPlayOnOpen: true,
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:ai_new/content.dart/all_content.dart';
+import 'dart:async';
 import 'package:ai_new/models/news_model.dart';
 import 'package:ai_new/services/ai_mode_service.dart';
 import 'package:ai_new/services/font_service.dart';
@@ -101,7 +102,9 @@ class _AiModeFeedPageState extends State<AiModeFeedPage> {
     if (!mounted) return;
     if (!uploaded) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Upload report failed. Please try again.')),
+        const SnackBar(
+          content: Text('Upload report failed. Please try again.'),
+        ),
       );
       return;
     }
@@ -122,9 +125,9 @@ class _AiModeFeedPageState extends State<AiModeFeedPage> {
     });
 
     if (_feedArticles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Reported: $reason')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Reported: $reason')));
       Navigator.of(context).pop();
       return;
     }
@@ -134,9 +137,9 @@ class _AiModeFeedPageState extends State<AiModeFeedPage> {
       _pageController.jumpToPage(_currentIndex);
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Reported: $reason')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Reported: $reason')));
   }
 
   Future<void> _saveArticle(NewsModel article) async {
@@ -198,7 +201,7 @@ class _AiModeFeedPageState extends State<AiModeFeedPage> {
         ArticleDateUtils.formatPublishedDate(article.publishedAt) ??
         'Unknown time';
 
-    Navigator.of(context).push(
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => ArticleDetailPage(
           imageUrl: article.imageUrl,
@@ -211,6 +214,7 @@ class _AiModeFeedPageState extends State<AiModeFeedPage> {
           relatedArticles: _feedArticles,
         ),
       ),
+      (route) => route.isFirst,
     );
   }
 }
@@ -258,6 +262,13 @@ class _AiModeCardState extends State<_AiModeCard> {
   bool _ttsLoading = false;
   bool _ttsReady = false;
   bool _didAutoStart = false;
+  bool _isPausedByTap = false;
+  bool _showCenterPlaybackIcon = false;
+  IconData _centerPlaybackIcon = Icons.play_arrow_rounded;
+  Timer? _centerIconTimer;
+  int _speechBaseOffset = 0;
+  int _resumeOffset = 0;
+  String _activeSpeechText = '';
   int _speechStart = 0;
   int _speechEnd = 0;
   int _lastProgressMs = 0;
@@ -289,8 +300,23 @@ class _AiModeCardState extends State<_AiModeCard> {
 
   @override
   void dispose() {
+    _centerIconTimer?.cancel();
     _tts.stop();
     super.dispose();
+  }
+
+  void _showPlaybackOverlayIcon(IconData icon) {
+    _centerIconTimer?.cancel();
+    if (!mounted) return;
+    setState(() {
+      _centerPlaybackIcon = icon;
+      _showCenterPlaybackIcon = true;
+    });
+
+    _centerIconTimer = Timer(const Duration(milliseconds: 480), () {
+      if (!mounted) return;
+      setState(() => _showCenterPlaybackIcon = false);
+    });
   }
 
   Future<void> _prepareTts() async {
@@ -306,8 +332,11 @@ class _AiModeCardState extends State<_AiModeCard> {
           setState(() {
             _isSpeaking = false;
             _isReading = false;
+            _isPausedByTap = false;
             _speechStart = 0;
             _speechEnd = 0;
+            _speechBaseOffset = 0;
+            _resumeOffset = 0;
           });
         },
         onError: (_) {
@@ -315,8 +344,11 @@ class _AiModeCardState extends State<_AiModeCard> {
           setState(() {
             _isSpeaking = false;
             _isReading = false;
+            _isPausedByTap = false;
             _speechStart = 0;
             _speechEnd = 0;
+            _speechBaseOffset = 0;
+            _resumeOffset = 0;
           });
         },
         onProgress: (startOffset, endOffset, _) {
@@ -329,6 +361,10 @@ class _AiModeCardState extends State<_AiModeCard> {
             _lastProgressMs = now;
             _speechStart = startOffset;
             _speechEnd = endOffset;
+            _resumeOffset = (_speechBaseOffset + endOffset).clamp(
+              0,
+              _activeSpeechText.length,
+            );
           });
         },
       );
@@ -343,6 +379,8 @@ class _AiModeCardState extends State<_AiModeCard> {
   Future<void> _autoStartIfNeeded() async {
     if (!widget.isActive || !widget.autoStartTts || _didAutoStart) return;
     _didAutoStart = true;
+    await Future.delayed(const Duration(seconds: 3));
+    if (!mounted || !widget.isActive) return;
     await _toggleTts();
   }
 
@@ -356,10 +394,75 @@ class _AiModeCardState extends State<_AiModeCard> {
       _isReading = false;
       _isSpeaking = false;
       _ttsLoading = false;
+      _isPausedByTap = false;
       _speechStart = 0;
       _speechEnd = 0;
+      _speechBaseOffset = 0;
+      _resumeOffset = 0;
       _lastProgressMs = 0;
     });
+  }
+
+  Future<void> _handleScreenTap() async {
+    if (_ttsLoading) return;
+
+    if (_isReading) {
+      try {
+        await _tts.stop();
+      } catch (_) {}
+      if (!mounted) return;
+      setState(() {
+        _isReading = false;
+        _isSpeaking = false;
+        _isPausedByTap = true;
+        _ttsLoading = false;
+      });
+      _showPlaybackOverlayIcon(Icons.pause_rounded);
+      return;
+    }
+
+    if (_isPausedByTap && _activeSpeechText.isNotEmpty) {
+      final safeOffset = _resumeOffset.clamp(0, _activeSpeechText.length);
+      final remaining = _activeSpeechText.substring(safeOffset);
+
+      if (remaining.trim().isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _isPausedByTap = false;
+          _speechBaseOffset = 0;
+          _resumeOffset = 0;
+        });
+        return;
+      }
+
+      try {
+        if (!mounted) return;
+        setState(() {
+          _ttsLoading = true;
+          _speechBaseOffset = safeOffset;
+          _isPausedByTap = false;
+        });
+        await _tts.stop();
+        if (!mounted) return;
+        setState(() {
+          _isReading = true;
+          _ttsLoading = false;
+        });
+        _showPlaybackOverlayIcon(Icons.play_arrow_rounded);
+        await _tts.speak(remaining);
+      } catch (_) {
+        if (!mounted) return;
+        setState(() {
+          _isReading = false;
+          _isSpeaking = false;
+          _ttsLoading = false;
+        });
+      }
+      return;
+    }
+
+    _showPlaybackOverlayIcon(Icons.play_arrow_rounded);
+    await _toggleTts();
   }
 
   Future<void> _toggleTts() async {
@@ -378,6 +481,10 @@ class _AiModeCardState extends State<_AiModeCard> {
 
     if (!_isReading) {
       setState(() {
+        _activeSpeechText = speechText;
+        _speechBaseOffset = 0;
+        _resumeOffset = 0;
+        _isPausedByTap = false;
         _speechStart = 0;
         _speechEnd = 0;
         _lastProgressMs = 0;
@@ -396,6 +503,9 @@ class _AiModeCardState extends State<_AiModeCard> {
               _speechStart = 0;
               _speechEnd = 0;
               _lastProgressMs = 0;
+              _speechBaseOffset = 0;
+              _resumeOffset = 0;
+              _isPausedByTap = false;
             }
           });
         },
@@ -432,50 +542,13 @@ class _AiModeCardState extends State<_AiModeCard> {
     TextOverflow overflow = TextOverflow.clip,
   }) {
     final baseStyle = style.copyWith(color: style.color ?? Colors.white);
-    if (text.isEmpty) {
-      return SizedBox(
-        width: double.infinity,
-        child: Text(text, style: baseStyle, maxLines: maxLines, overflow: overflow),
-      );
-    }
-
-    final shouldHighlight = _isReading && _isSpeaking;
-    if (!shouldHighlight) {
-      return SizedBox(
-        width: double.infinity,
-        child: Text(text, style: baseStyle, maxLines: maxLines, overflow: overflow),
-      );
-    }
-
-    final localStart = (_speechStart - sectionStartOffset).clamp(0, text.length);
-    final localEnd = (_speechEnd - sectionStartOffset).clamp(0, text.length);
-    if (localEnd <= localStart) {
-      return SizedBox(
-        width: double.infinity,
-        child: Text(text, style: baseStyle, maxLines: maxLines, overflow: overflow),
-      );
-    }
-
     return SizedBox(
       width: double.infinity,
-      child: RichText(
+      child: Text(
+        text,
+        style: baseStyle,
         maxLines: maxLines,
         overflow: overflow,
-        text: TextSpan(
-          style: baseStyle,
-          children: [
-            TextSpan(text: text.substring(0, localStart)),
-            TextSpan(
-              text: text.substring(localStart, localEnd),
-              style: baseStyle.copyWith(
-                backgroundColor: const Color(0xFFFEE440),
-                color: Colors.black,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            TextSpan(text: text.substring(localEnd)),
-          ],
-        ),
       ),
     );
   }
@@ -547,7 +620,10 @@ class _AiModeCardState extends State<_AiModeCard> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.text_fields, color: Colors.white),
+                      leading: const Icon(
+                        Icons.text_fields,
+                        color: Colors.white,
+                      ),
                       title: const Text(
                         'Font',
                         style: TextStyle(color: Colors.white, fontSize: 16),
@@ -568,7 +644,10 @@ class _AiModeCardState extends State<_AiModeCard> {
                                 strokeWidth: 2,
                               ),
                             )
-                          : const Icon(Icons.flag_outlined, color: Colors.white),
+                          : const Icon(
+                              Icons.flag_outlined,
+                              color: Colors.white,
+                            ),
                       title: const Text(
                         'Report',
                         style: TextStyle(color: Colors.white, fontSize: 16),
@@ -594,7 +673,10 @@ class _AiModeCardState extends State<_AiModeCard> {
                           : const Icon(Icons.translate, color: Colors.white),
                       title: Text(
                         _isTranslated ? 'View original' : 'Translate',
-                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
                       ),
                       onTap: _isTranslating
                           ? null
@@ -707,245 +789,266 @@ class _AiModeCardState extends State<_AiModeCard> {
     final hasLongDescription = _displayDescription.length > 120;
 
     return SafeArea(
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          _BackgroundImage(
-            imageUrl: widget.article.imageUrl,
-            width: media.width,
-            height: media.height,
-          ),
-          DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0x66000000),
-                  Color(0x33000000),
-                  Color(0x99000000),
-                  Color(0xE6000000),
-                ],
-                stops: [0.0, 0.35, 0.72, 1.0],
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: _handleScreenTap,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _BackgroundImage(
+              imageUrl: widget.article.imageUrl,
+              width: media.width,
+              height: media.height,
+            ),
+            DecoratedBox(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0x66000000),
+                    Color(0x33000000),
+                    Color(0x99000000),
+                    Color(0xE6000000),
+                  ],
+                  stops: [0.0, 0.35, 0.72, 1.0],
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: widget.onClose,
-                      icon: const Icon(Icons.close, color: Colors.white),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: widget.onClose,
+                        icon: const Icon(Icons.close, color: Colors.white),
                       ),
-                      decoration: BoxDecoration(
-                        color: const Color(0x33000000),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${widget.currentIndex + 1} / ${widget.totalCount}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0x33000000),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${widget.currentIndex + 1} / ${widget.totalCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      sourceHost,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                      const Spacer(),
+                      Text(
+                        sourceHost,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    const SizedBox(width: 42),
-                    GestureDetector(
-                      onTap: () => _showMoreOptions(context),
-                      child: const Icon(Icons.more_horiz, color: Colors.white),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Row(
+                      const Spacer(),
+                      const SizedBox(width: 42),
+                      GestureDetector(
+                        onTap: () => _showMoreOptions(context),
+                        child: const Icon(
+                          Icons.more_horiz,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          children: [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Row(
+                                children: [
+                                  Text(
+                                    (widget.article.sourceName ?? 'NEWS')
+                                        .toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      letterSpacing: 1.1,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  const Text(
+                                    '•',
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    when,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: _buildHighlightedSection(
+                                text: _displayTitle,
+                                sectionStartOffset: 0,
+                                maxLines: _isDescriptionExpanded ? null : 3,
+                                overflow: _isDescriptionExpanded
+                                    ? TextOverflow.visible
+                                    : TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: _titleFontSize,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.05,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: _buildHighlightedSection(
+                                text: _displayDescription,
+                                sectionStartOffset: _descriptionStartOffset,
+                                maxLines: _isDescriptionExpanded
+                                    ? 10
+                                    : _collapsedDescriptionLines,
+                                overflow: _isDescriptionExpanded
+                                    ? TextOverflow.ellipsis
+                                    : TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: _descFontSize,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                            if (hasLongDescription)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _isDescriptionExpanded =
+                                          !_isDescriptionExpanded;
+                                    });
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 0,
+                                      vertical: 4,
+                                    ),
+                                    minimumSize: const Size(0, 0),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    _isDescriptionExpanded
+                                        ? 'Thu gọn'
+                                        : 'Xem thêm',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 14),
+                            Row(
                               children: [
-                                Text(
-                                  (widget.article.sourceName ?? 'NEWS')
-                                      .toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    letterSpacing: 1.1,
-                                    fontSize: 11,
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 46,
+                                    child: ElevatedButton.icon(
+                                      onPressed: widget.onReadFull,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: Colors.black,
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            26,
+                                          ),
+                                        ),
+                                      ),
+                                      icon: const Icon(
+                                        Icons.menu_book,
+                                        size: 18,
+                                      ),
+                                      label: const Text(
+                                        'Read Full',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
-                                const Text(
-                                  '•',
-                                  style: TextStyle(color: Colors.white70),
+                                _CircleAction(
+                                  icon: Icons.link,
+                                  onTap: widget.onOpenOriginal,
                                 ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  when,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                  ),
+                                const SizedBox(width: 8),
+                                _CircleAction(
+                                  icon: Icons.bookmark_border,
+                                  onTap: widget.onSave,
+                                ),
+                                const SizedBox(width: 8),
+                                _CircleAction(
+                                  icon: Icons.share,
+                                  onTap: widget.onShare,
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: _buildHighlightedSection(
-                              text: _displayTitle,
-                              sectionStartOffset: 0,
-                              maxLines: _isDescriptionExpanded ? null : 3,
-                              overflow: _isDescriptionExpanded
-                                  ? TextOverflow.visible
-                                  : TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: _titleFontSize,
-                                fontWeight: FontWeight.w800,
-                                height: 1.05,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: _buildHighlightedSection(
-                              text: _displayDescription,
-                              sectionStartOffset: _descriptionStartOffset,
-                              maxLines: _isDescriptionExpanded
-                                  ? 10
-                                  : _collapsedDescriptionLines,
-                              overflow: _isDescriptionExpanded
-                                  ? TextOverflow.ellipsis
-                                  : TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: _descFontSize,
-                                height: 1.35,
-                              ),
-                            ),
-                          ),
-                          if (hasLongDescription)
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _isDescriptionExpanded =
-                                        !_isDescriptionExpanded;
-                                  });
-                                },
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 0,
-                                    vertical: 4,
-                                  ),
-                                  minimumSize: const Size(0, 0),
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: Text(
-                                  _isDescriptionExpanded
-                                      ? 'Thu gọn'
-                                      : 'Xem thêm',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: SizedBox(
-                                  height: 46,
-                                  child: ElevatedButton.icon(
-                                    onPressed: _toggleTts,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: Colors.black,
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(26),
-                                      ),
-                                    ),
-                                    icon: _ttsLoading
-                                        ? const SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.black,
-                                            ),
-                                          )
-                                        : Icon(
-                                            _isReading
-                                                ? Icons.stop_rounded
-                                                : Icons.menu_book,
-                                            size: 18,
-                                          ),
-                                    label: Text(
-                                      _isReading ? 'Stop' : 'Read Full',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              _CircleAction(
-                                icon: Icons.link,
-                                onTap: widget.onOpenOriginal,
-                              ),
-                              const SizedBox(width: 8),
-                              _CircleAction(
-                                icon: Icons.bookmark_border,
-                                onTap: widget.onSave,
-                              ),
-                              const SizedBox(width: 8),
-                              _CircleAction(
-                                icon: Icons.share,
-                                onTap: widget.onShare,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                        ],
+                            const SizedBox(height: 8),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_showCenterPlaybackIcon)
+              IgnorePointer(
+                child: Center(
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 140),
+                    opacity: 1,
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        color: const Color(0xAA000000),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0x33FFFFFF)),
+                      ),
+                      child: Icon(
+                        _centerPlaybackIcon,
+                        color: Colors.white,
+                        size: 46,
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ],
+              ),
+          ],
+        ),
       ),
     );
   }
