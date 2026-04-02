@@ -1,12 +1,12 @@
 import 'package:ai_new/component/article_image.dart';
 import 'package:ai_new/component/newslate.dart';
+import 'package:ai_new/content.dart/ai_mode_feed_page.dart';
 import 'package:ai_new/models/news_model.dart';
 import 'package:ai_new/services/ai_mode_service.dart';
 import 'package:ai_new/services/font_service.dart';
 import 'package:ai_new/services/histories_service.dart';
 import 'package:ai_new/services/report_service.dart';
 import 'package:ai_new/services/save_service.dart';
-import 'package:ai_new/services/translation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:share_plus/share_plus.dart';
@@ -21,6 +21,7 @@ class ArticleDetailPage extends StatefulWidget {
   final String description;
   final String? content;
   final List<NewsModel>? relatedArticles;
+  final bool autoPlayTtsOnOpen;
 
   const ArticleDetailPage({
     super.key,
@@ -32,6 +33,7 @@ class ArticleDetailPage extends StatefulWidget {
     required this.description,
     this.content,
     this.relatedArticles,
+    this.autoPlayTtsOnOpen = false,
   });
 
   @override
@@ -40,7 +42,6 @@ class ArticleDetailPage extends StatefulWidget {
 
 class _ArticleDetailPageState extends State<ArticleDetailPage> {
   late bool _isSaved;
-  bool _isTranslating = false;
   bool _isReading = false;
   bool _isSpeaking = false;
   bool _ttsLoading = false;
@@ -52,6 +53,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
   late String _displayDescription;
   String? _displayContent;
   final FlutterTts _tts = FlutterTts();
+  bool _didAutoPlayTts = false;
 
   double get _articleFontSize => FontService.bodyFontSize(_fontLevel);
 
@@ -114,41 +116,28 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
       (item) =>
           item.title == widget.title && item.sourceName == widget.sourceName,
     );
-    _translateArticle();
     HistoryService.addHistory(_currentArticle);
-    _initTts();
+
+    if (widget.autoPlayTtsOnOpen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startTtsOnOpen();
+      });
+    }
   }
 
-  Future<void> _translateArticle() async {
-    setState(() {
-      _isTranslating = true;
-    });
+  Future<void> _startTtsOnOpen() async {
+    if (!mounted || _didAutoPlayTts) return;
+    _didAutoPlayTts = true;
 
     try {
-      final translated = await TranslationService.translateArticleToEnglish(
-        title: widget.title,
-        description: widget.description,
-        content: widget.content,
-      );
-
-      if (!mounted) return;
-      setState(() {
-        _displayTitle = translated.title;
-        _displayDescription = translated.description;
-        _displayContent = translated.content;
-      });
+      await _initTts();
+      if (!mounted || _isReading) return;
+      await _toggleTts();
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _displayTitle = widget.title;
-        _displayDescription = widget.description;
-        _displayContent = widget.content;
-      });
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isTranslating = false;
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to auto-start voice reading.')),
+      );
     }
   }
 
@@ -409,14 +398,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                 color: Colors.black,
               ),
             ),
-            if (_isTranslating)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'Translating content to English...',
-                  style: TextStyle(fontSize: 12, color: Colors.blueGrey),
-                ),
-              ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -432,28 +413,12 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                 SizedBox(
                   height: 42,
                   child: ElevatedButton.icon(
-                    onPressed: _ttsLoading ? null : _toggleTts,
-                    icon: _ttsLoading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Icon(
-                            _isReading
-                                ? Icons.stop_circle_outlined
-                                : Icons.graphic_eq_rounded,
-                            size: 18,
-                          ),
-                    label: Text(_isReading ? 'Stop' : 'AI Mode'),
+                    onPressed: _confirmOpenAiMode,
+                    icon: const Icon(Icons.auto_awesome, size: 18),
+                    label: const Text('AI Mode'),
                     style: ElevatedButton.styleFrom(
                       elevation: 0,
-                      backgroundColor: _isReading
-                          ? Colors.red.shade600
-                          : Colors.blueAccent,
+                      backgroundColor: Colors.blueAccent,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       shape: RoundedRectangleBorder(
@@ -555,10 +520,100 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
     );
   }
 
-  void _saveArticle(BuildContext context) {
+  Future<void> _confirmOpenAiMode() async {
+    final shouldOpen = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 22),
+          child: Container(
+            width: 340,
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F2F6),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE3E6EF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome,
+                    size: 24,
+                    color: Color(0xFF2A2E93),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'AI Summary Mode',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1F2433),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'You are now viewing an AI-generated\n'
+                  'summary of this article. You can\n'
+                  'switch back to the full text at any\n'
+                  'time.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    height: 1.45,
+                    color: Color(0xFF5E6476),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: const Color(0xFF2A2E93),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    child: const Text(
+                      'Got it',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (shouldOpen == true) {
+      _openAiModeFeed();
+    }
+  }
+
+  Future<void> _saveArticle(BuildContext context) async {
     final article = _currentArticle;
 
-    final saved = SaveService.saveArticle(article);
+    final saved = await SaveService.saveArticle(article);
+    if (!mounted) return;
     if (saved) {
       setState(() {
         _isSaved = true;
@@ -570,6 +625,50 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
           saved
               ? 'Đã lưu bài viết thành công'
               : 'Bài viết này đã được lưu trước đó',
+        ),
+      ),
+    );
+  }
+
+  void _openAiModeFeed() {
+    final currentForFeed = NewsModel(
+      title: _displayTitle,
+      description: _displayDescription,
+      content: _displayContent,
+      imageUrl: widget.imageUrl,
+      sourceName: widget.sourceName,
+      publishedAt: null,
+      articleUrl: widget.articleUrl,
+    );
+
+    final pool = [
+      currentForFeed,
+      ...(widget.relatedArticles ?? const <NewsModel>[]),
+    ];
+
+    final deduped = <String, NewsModel>{};
+    for (final article in pool) {
+      final key =
+          '${article.title.trim().toLowerCase()}::${(article.sourceName ?? '').trim().toLowerCase()}';
+      if (key == '::') continue;
+      deduped[key] = article;
+    }
+
+    final feedArticles = deduped.values.toList();
+    if (feedArticles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No articles available for AI mode.')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AiModeFeedPage(
+          articles: feedArticles,
+          initialIndex: 0,
+          autoPlayOnOpen: false,
         ),
       ),
     );

@@ -107,7 +107,7 @@ class _SplashCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Georgia',
-              fontSize: 46,
+              fontSize: 36,
               fontWeight: FontWeight.w900,
               color: Colors.black,
               height: 1.02,

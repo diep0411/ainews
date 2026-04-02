@@ -30,4 +30,25 @@ class NewsModel {
       articleUrl: json['url'] as String?,
     );
   }
+
+  /// Flat map used for local persistence (SharedPreferences).
+  Map<String, dynamic> toMap() => {
+        'title': title,
+        'description': description,
+        'content': content,
+        'imageUrl': imageUrl,
+        'sourceName': sourceName,
+        'publishedAt': publishedAt,
+        'articleUrl': articleUrl,
+      };
+
+  factory NewsModel.fromMap(Map<String, dynamic> map) => NewsModel(
+        title: map['title'] as String? ?? 'No title',
+        description: map['description'] as String?,
+        content: map['content'] as String?,
+        imageUrl: map['imageUrl'] as String?,
+        sourceName: map['sourceName'] as String?,
+        publishedAt: map['publishedAt'] as String?,
+        articleUrl: map['articleUrl'] as String?,
+      );
 }

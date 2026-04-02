@@ -44,17 +44,17 @@ class _SourcespageState extends State<Sourcespage> {
       appBar: AppBar(
         title: const Text(
           'SOURCES',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         foregroundColor: Colors.black,
         elevation: 0,
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         children: getSources().map((source) {
           return Padding(
             key: ValueKey(source),
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: 16),
             child: _buildSources(source),
           );
         }).toList(),
@@ -70,7 +70,7 @@ class _SourcespageState extends State<Sourcespage> {
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
 
         InkWell(
@@ -98,14 +98,14 @@ class _SourcespageState extends State<Sourcespage> {
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                              fontSize: 20,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 18),
                           Text(
                             'You will no longer see articles from $title in your feed.',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 14),
+                            style: const TextStyle(fontSize: 16),
                           ),
                           const SizedBox(height: 32),
                           SizedBox(
@@ -126,7 +126,7 @@ class _SourcespageState extends State<Sourcespage> {
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 17,
                                 ),
                               ),
                             ),
@@ -150,7 +150,7 @@ class _SourcespageState extends State<Sourcespage> {
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 16,
+                                  fontSize: 17,
                                 ),
                               ),
                             ),
@@ -193,8 +193,8 @@ class _SourcespageState extends State<Sourcespage> {
             }
           },
           child: Container(
-            height: 40,
-            width: 100,
+            height: 48,
+            width: 120,
             decoration: BoxDecoration(
               color: isFollowing ? Colors.blue : Colors.white,
               border: Border.all(color: Colors.blue, width: 1.5),
@@ -204,6 +204,7 @@ class _SourcespageState extends State<Sourcespage> {
                 isFollowing ? "FOLLOWING" : "FOLLOW",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 14,
                   color: isFollowing ? Colors.white : Colors.black,
                 ),
               ),

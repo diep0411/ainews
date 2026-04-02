@@ -21,7 +21,10 @@ class _HistoriesPageState extends State<HistoriesPage> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Histories'),
+            title: const Text(
+              'Histories',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.delete),
@@ -34,8 +37,17 @@ class _HistoriesPageState extends State<HistoriesPage> {
             ],
           ),
           body: histories.isEmpty
-              ? const Center(child: Text("No history yet"))
+              ? Center(
+                  child: Text(
+                    'No history yet',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                )
               : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   itemCount: histories.length,
                   itemBuilder: (context, index) {
                     final item = histories[index];
@@ -46,10 +58,9 @@ class _HistoriesPageState extends State<HistoriesPage> {
                       },
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.grey.withOpacity(0.2),
@@ -59,42 +70,47 @@ class _HistoriesPageState extends State<HistoriesPage> {
                           ],
                         ),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: item.imageUrl != null
-                                  ? Image.network(
-                                      item.imageUrl!,
-                                      height: 180,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Container(
-                                      height: 180,
-                                      width: double.infinity,
-                                      color: Colors.grey.shade300,
-                                      child: const Icon(Icons.image, size: 50),
+                            item.imageUrl != null
+                                ? Image.network(
+                                    item.imageUrl!,
+                                    height: 180,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Container(
+                                    height: 180,
+                                    width: double.infinity,
+                                    color: Colors.grey.shade300,
+                                    child: const Icon(Icons.image, size: 50),
+                                  ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.sourceName ?? 'Unknown source',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.blue,
                                     ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              item.sourceName ?? "Unknown source",
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    item.title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 19,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],

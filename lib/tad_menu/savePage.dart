@@ -21,7 +21,10 @@ class SavePage extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Saved'),
+            title: const Text(
+              'Saved',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             centerTitle: false,
             elevation: 0,
           ),
@@ -37,16 +40,16 @@ class SavePage extends StatelessWidget {
                           'No Saved Articles Yet',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
                         const Text(
-                          'Articles you save for later will appear \n'
-                          'here. Start exploring to find stories you love.',
+                          'Articles you save for later will appear here. '
+                          'Start exploring to find stories you love.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                          style: TextStyle(fontSize: 15, color: Colors.grey),
                         ),
                         const SizedBox(height: 16),
                         // ElevatedButton.icon(
@@ -85,7 +88,8 @@ class SavePage extends StatelessWidget {
                               'Start Exploring',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
                               ),
                             ),
                           ),
@@ -159,8 +163,8 @@ class SavePage extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
+                          horizontal: 12,
+                          vertical: 8,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.blue.shade50,
@@ -170,8 +174,8 @@ class SavePage extends StatelessWidget {
                           article.sourceName ?? 'Unknown source',
                           style: TextStyle(
                             color: Colors.blue.shade800,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
                           ),
                         ),
                       ),
@@ -184,7 +188,7 @@ class SavePage extends StatelessWidget {
                               '',
                           style: TextStyle(
                             color: Colors.grey.shade600,
-                            fontSize: 12,
+                            fontSize: 13,
                           ),
                         ),
                     ],
@@ -194,7 +198,7 @@ class SavePage extends StatelessWidget {
                     article.title,
                     maxLines: 2,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 19,
                       fontWeight: FontWeight.bold,
                       height: 1.3,
                     ),
@@ -221,6 +225,7 @@ class SavePage extends StatelessWidget {
                         style: TextStyle(
                           color: Colors.blue.shade700,
                           fontWeight: FontWeight.w700,
+                          fontSize: 15,
                         ),
                       ),
                       Icon(

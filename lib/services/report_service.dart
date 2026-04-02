@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:ai_new/models/news_model.dart';
+import 'package:http/http.dart' as http;
 
 class ReportService {
   static final Set<String> _reportedKeys = <String>{};
   static final ValueNotifier<int> reportsVersion = ValueNotifier<int>(0);
+  static final Uri _reportEndpoint = Uri.parse('https://httpbin.org/post');
 
   static const List<String> _reasons = [
     'Nội dung không phù hợp',
@@ -252,5 +256,34 @@ class ReportService {
     );
 
     return result;
+  }
+
+  static Future<bool> uploadReport({
+    required NewsModel article,
+    required String reason,
+  }) async {
+    final payload = <String, dynamic>{
+      'reason': reason,
+      'title': article.title,
+      'description': article.description,
+      'content': article.content,
+      'sourceName': article.sourceName,
+      'articleUrl': article.articleUrl,
+      'imageUrl': article.imageUrl,
+      'reportedAt': DateTime.now().toUtc().toIso8601String(),
+    };
+
+    try {
+      final response = await http
+          .post(
+            _reportEndpoint,
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          )
+          .timeout(const Duration(seconds: 8));
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
   }
 }

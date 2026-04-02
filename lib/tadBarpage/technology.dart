@@ -1,5 +1,6 @@
 import 'package:ai_new/component/newslate.dart';
 import 'package:ai_new/component/top_article_card.dart';
+import 'package:ai_new/component/top_paginator.dart';
 import 'package:ai_new/models/news_model.dart';
 import 'package:ai_new/services/news_service.dart';
 import 'package:ai_new/services/report_service.dart';
@@ -13,9 +14,13 @@ class TechnologyPage extends StatefulWidget {
 }
 
 class _TechnologyPageState extends State<TechnologyPage> {
+  static const int _kTopPageSize = 5;
+
+  final ScrollController _scrollController = ScrollController();
   List<NewsModel> _articles = [];
   bool _isLoading = true;
   String? _errorMessage;
+  int _topPage = 0;
 
   @override
   void initState() {
@@ -23,10 +28,27 @@ class _TechnologyPageState extends State<TechnologyPage> {
     _loadArticles();
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
   Future<void> _loadArticles() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _topPage = 0;
     });
 
     try {
@@ -110,6 +132,7 @@ class _TechnologyPageState extends State<TechnologyPage> {
     return RefreshIndicator(
       onRefresh: _loadArticles,
       child: SingleChildScrollView(
+        controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,7 +159,8 @@ class _TechnologyPageState extends State<TechnologyPage> {
               ),
             ),
             ...visibleArticles
-                .take(3)
+                .skip(_topPage * _kTopPageSize)
+                .take(_kTopPageSize)
                 .map(
                   (article) => Padding(
                     padding: const EdgeInsets.only(bottom: 16),
@@ -146,6 +170,14 @@ class _TechnologyPageState extends State<TechnologyPage> {
                     ),
                   ),
                 ),
+            TopPaginator(
+              currentPage: _topPage,
+              totalPages: (visibleArticles.length / _kTopPageSize).ceil(),
+              onPageChanged: (page) {
+                setState(() => _topPage = page);
+                _scrollToTop();
+              },
+            ),
             const SizedBox(height: 8),
             const Text(
               'Latest Technology News',
@@ -153,7 +185,7 @@ class _TechnologyPageState extends State<TechnologyPage> {
             ),
             const SizedBox(height: 16),
             ...visibleArticles
-                .skip(3)
+                .skip(5)
                 .take(7)
                 .map(
                   (article) => Padding(
