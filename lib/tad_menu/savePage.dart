@@ -149,10 +149,6 @@ class SavePage extends StatelessWidget {
               imageUrl: article.imageUrl,
               width: double.infinity,
               height: 180,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(18),
-                topRight: Radius.circular(18),
-              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),

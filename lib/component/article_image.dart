@@ -6,14 +6,12 @@ class ArticleImage extends StatelessWidget {
   final String? imageUrl;
   final double? width;
   final double height;
-  final BorderRadius borderRadius;
 
   const ArticleImage({
     super.key,
     required this.imageUrl,
     this.width,
     required this.height,
-    this.borderRadius = const BorderRadius.all(Radius.circular(16)),
   });
 
   @override
@@ -21,7 +19,6 @@ class ArticleImage extends StatelessWidget {
     final normalizedImageUrl = _normalizeImageUrl(imageUrl);
 
     return ClipRRect(
-      borderRadius: borderRadius,
       child: normalizedImageUrl != null
           ? Image.network(
               normalizedImageUrl,

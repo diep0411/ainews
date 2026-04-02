@@ -20,7 +20,7 @@ class MenuPage extends StatelessWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
         children: [
           _buildSectionHeader('CURATION'),
           _buildCard(
@@ -47,7 +47,7 @@ class MenuPage extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 22),
           _buildSectionHeader('GENERAL'),
           _buildCard(
             children: [
@@ -87,14 +87,14 @@ class MenuPage extends StatelessWidget {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 2, bottom: 8),
+      padding: const EdgeInsets.only(left: 4, bottom: 10),
       child: Text(
         title,
         style: const TextStyle(
           color: Color(0xFF2F5BEA),
-          fontSize: 11,
+          fontSize: 13,
           fontWeight: FontWeight.w700,
-          letterSpacing: 1.1,
+          letterSpacing: 1.2,
         ),
       ),
     );
@@ -104,14 +104,14 @@ class MenuPage extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(children: children),
     );
   }
 
   Widget _buildDivider() {
-    return const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0));
+    return const Divider(height: 1, thickness: 3, color: Color(0xFFF0F0F0));
   }
 
   Widget _buildMenuTile({
@@ -124,13 +124,13 @@ class MenuPage extends StatelessWidget {
   }) {
     return ListTile(
       onTap: onTap,
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-      leading: Icon(icon, size: 19, color: Colors.grey.shade600),
+      minTileHeight: 62,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+      leading: Icon(icon, size: 24, color: Colors.grey.shade700),
       title: Text(
         title,
         style: const TextStyle(
-          fontSize: 15,
+          fontSize: 17,
           fontWeight: FontWeight.w600,
           color: Color(0xFF191919),
         ),
@@ -140,16 +140,15 @@ class MenuPage extends StatelessWidget {
               trailingText,
               style: TextStyle(
                 color: Colors.grey.shade600,
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
             )
           : Icon(
               trailingIcon ?? Icons.chevron_right,
-              size: 18,
+              size: 22,
               color: Colors.grey.shade400,
             ),
-      visualDensity: const VisualDensity(vertical: -1.5),
     );
   }
 

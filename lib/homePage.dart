@@ -1,3 +1,4 @@
+import 'package:ai_new/search_page.dart';
 import 'package:ai_new/tadBarpage/business.dart';
 import 'package:ai_new/tadBarpage/climate.dart';
 import 'package:ai_new/tadBarpage/technology.dart';
@@ -36,7 +37,14 @@ class _HomepageState extends State<Homepage> {
             IconButton(
               icon: const Icon(Icons.search),
               color: Colors.blue,
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SearchPage(),
+                  ),
+                );
+              },
             ),
           ],
           bottom: const TabBar(
@@ -52,7 +60,7 @@ class _HomepageState extends State<Homepage> {
           ),
         ),
         body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 5),
           child: const TabBarView(
             children: [
               AllArticles(),

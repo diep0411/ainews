@@ -75,19 +75,122 @@ class _SourcespageState extends State<Sourcespage> {
 
         InkWell(
           onTap: () async {
-            final prefs = await SharedPreferences.getInstance();
+            if (isFollowing) {
+              // Show unfollow confirmation dialog
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (BuildContext context) {
+                  return Dialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 32,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Unfollow $title?',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'You will no longer see articles from $title in your feed.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          const SizedBox(height: 32),
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton(
+                              style: TextButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.zero,
+                                ),
+                              ),
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text(
+                                'Unfollow',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton(
+                              style: TextButton.styleFrom(
+                                backgroundColor: const Color(0xFFF5F5F5),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.zero,
+                                ),
+                              ),
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
 
-            setState(() {
-              final current = followMap[title] ?? false;
-              followMap[title] = !current;
-            });
+              if (confirm == true) {
+                final prefs = await SharedPreferences.getInstance();
 
-            final followedKeys = followMap.entries
-                .where((e) => e.value)
-                .map((e) => e.key)
-                .toList();
+                setState(() {
+                  followMap[title] = false;
+                });
 
-            await prefs.setStringList('follow_keys', followedKeys);
+                final followedKeys = followMap.entries
+                    .where((e) => e.value)
+                    .map((e) => e.key)
+                    .toList();
+
+                await prefs.setStringList('follow_keys', followedKeys);
+              }
+            } else {
+              // Directly follow without confirmation
+              final prefs = await SharedPreferences.getInstance();
+
+              setState(() {
+                followMap[title] = true;
+              });
+
+              final followedKeys = followMap.entries
+                  .where((e) => e.value)
+                  .map((e) => e.key)
+                  .toList();
+
+              await prefs.setStringList('follow_keys', followedKeys);
+            }
           },
           child: Container(
             height: 40,

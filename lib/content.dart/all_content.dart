@@ -506,7 +506,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                 imageUrl: widget.imageUrl,
                 width: double.infinity,
                 height: 240,
-                borderRadius: const BorderRadius.all(Radius.circular(20)),
               ),
             ),
             _buildHighlightedSection(
