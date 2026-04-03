@@ -7,8 +7,95 @@ import 'package:ai_new/services/save_service.dart';
 import 'package:ai_new/utils/article_date_utils.dart';
 import 'package:flutter/material.dart';
 
-class SavePage extends StatelessWidget {
+class SavePage extends StatefulWidget {
   const SavePage({super.key});
+
+  @override
+  State<SavePage> createState() => _SavePageState();
+}
+
+class _SavePageState extends State<SavePage> {
+  static const Color _dialogPrimary = Color(0xFF1D4ED8);
+  static const Color _dialogNeutralBg = Color(0xFFF3F4F6);
+
+  Future<void> _confirmAndUnsave(NewsModel article) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Remove saved article?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 19),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Do you want to remove "${article.title}" from Saved?',
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 14, height: 1.35),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: _dialogPrimary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    child: const Text(
+                      'Remove',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: _dialogNeutralBg,
+                      foregroundColor: Colors.black87,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    await SaveService.removeArticle(article);
+    if (!mounted) return;
+
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +192,7 @@ class SavePage extends StatelessWidget {
                       const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     final article = savedArticles[index];
-                    return _buildSavedArticleCard(context, article);
+                    return _buildSavedArticleCard(article);
                   },
                 ),
         );
@@ -113,7 +200,7 @@ class SavePage extends StatelessWidget {
     );
   }
 
-  Widget _buildSavedArticleCard(BuildContext context, NewsModel article) {
+  Widget _buildSavedArticleCard(NewsModel article) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -204,10 +291,14 @@ class SavePage extends StatelessWidget {
                       fontSize: 15,
                     ),
                   ),
-                  Icon(
-                    Icons.bookmark,
-                    color: Colors.blue.shade700,
-                    size: 22,
+                  IconButton(
+                    onPressed: () => _confirmAndUnsave(article),
+                    icon: Icon(
+                      Icons.bookmark,
+                      color: Colors.blue.shade700,
+                      size: 22,
+                    ),
+                    tooltip: 'Remove saved article',
                   ),
                 ],
               ),

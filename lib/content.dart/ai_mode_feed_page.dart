@@ -252,7 +252,8 @@ class _AiModeCard extends StatefulWidget {
 }
 
 class _AiModeCardState extends State<_AiModeCard> {
-  static const int _collapsedDescriptionLines = 3;
+  static const 
+  int _collapsedDescriptionLines = 3;
   bool _isDescriptionExpanded = false;
   ArticleFontLevel _fontLevel = ArticleFontLevel.medium;
   bool _isTranslating = false;

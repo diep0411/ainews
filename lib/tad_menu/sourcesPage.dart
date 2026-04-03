@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ai_new/services/histories_service.dart';
+import 'package:ai_new/services/news_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Sourcespage extends StatefulWidget {
@@ -12,10 +12,11 @@ class Sourcespage extends StatefulWidget {
 class _SourcespageState extends State<Sourcespage> {
   Map<String, bool> followMap = {};
   List<String> getSources() {
-    return HistoryService.histories
+    return NewsService.cachedArticles
         .map((e) => e.sourceName ?? "Unknown")
         .toSet()
-        .toList();
+        .toList()
+      ..sort();
   }
 
   @override

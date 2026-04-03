@@ -4,6 +4,16 @@ import 'package:ai_new/models/news_model.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 class NewsService {
+  /// All articles loaded at startup. Populated by [preload] in main().
+  static List<NewsModel> cachedArticles = const [];
+
+  /// Pre-loads all articles once at startup so the rest of the app can access
+  /// them synchronously (e.g., Sources page).
+  static Future<void> preload() async {
+    if (cachedArticles.isNotEmpty) return;
+    cachedArticles = await fetchTopHeadlines();
+  }
+
   static const String _contentPath1 = 'assets/js/content-0-page-1.json';
   static const String _contentPath2 = 'assets/js/domain-1949198388-page-1.json';
   static const String _preConfigPath = 'assets/js/pre_france.txt.json';

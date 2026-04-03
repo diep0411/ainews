@@ -188,20 +188,6 @@ class _TechnologiePageState extends State<TechnologiePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                child: Row(
-                  children: const [
-                    Text(
-                      'TECHNOLOGIE',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               ...visibleArticles
                   .skip(_topPage * _kTopPageSize)
                   .take(_kTopPageSize)

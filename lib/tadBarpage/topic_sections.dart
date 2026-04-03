@@ -144,12 +144,11 @@ class TopicSections extends StatelessWidget {
     required NewsModel article,
   }) {
     return InkWell(
-      borderRadius: BorderRadius.circular(18),
       onTap: () => onOpenArticle(article, articlePool),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
         child: SizedBox(
           height: 205,
+          width: double.infinity,
           child: Stack(
             fit: StackFit.expand,
             children: [
