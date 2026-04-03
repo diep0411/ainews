@@ -212,7 +212,6 @@ class _AiModeFeedPageState extends State<AiModeFeedPage> {
           description: article.description ?? 'No description',
           content: article.content,
           contentItems: article.contentItems,
-          videoUrl: article.videoUrl,
           relatedArticles: _feedArticles,
         ),
       ),

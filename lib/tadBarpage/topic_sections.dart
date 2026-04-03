@@ -18,8 +18,9 @@ class TopicSections extends StatelessWidget {
 
   static const List<_TopicSpec> _topicSpecs = [
     _TopicSpec(
-      title: 'IRAN, ISEREL',
+      title: 'IRAN, ISRAEL',
       badge: 'LIVE',
+      ctgIdFilters: [44], 
       keywords: [
         'iran',
         'tehran',
@@ -35,6 +36,7 @@ class TopicSections extends StatelessWidget {
     _TopicSpec(
       title: 'SPORT',
       badge: 'TRENDING',
+      ctgIdFilters: [32], // Sport category
       keywords: [
         'sport',
         'sports',
@@ -78,6 +80,20 @@ class TopicSections extends StatelessWidget {
     final scored = <MapEntry<NewsModel, int>>[];
 
     for (final article in articles) {
+      int score = 0;
+
+      // Primary: check ctgId
+      if (article.ctgId != null && spec.ctgIdFilters.contains(article.ctgId)) {
+        score += 100; // High score for ctgId match
+      }
+
+      // If strong ctgId match, add to result
+      if (score >= 100) {
+        scored.add(MapEntry(article, score));
+        continue;
+      }
+
+      // Fallback: keyword matching
       final title = article.title.toLowerCase();
       final description = (article.description ?? '').toLowerCase();
       final source = (article.sourceName ?? '').toLowerCase();
@@ -93,7 +109,7 @@ class TopicSections extends StatelessWidget {
         continue;
       }
 
-      final score =
+      score =
           (titleHits * 6) +
           (descriptionHits * 3) +
           (sourceHits * 2) +
@@ -311,11 +327,13 @@ class _TopicSpec {
   final String title;
   final String badge;
   final List<String> keywords;
+  final List<int> ctgIdFilters; // Primary filter: ctgId (category IDs)
 
   const _TopicSpec({
     required this.title,
     required this.badge,
     required this.keywords,
+    required this.ctgIdFilters,
   });
 }
 
@@ -350,6 +368,13 @@ class _TopicAllArticlesPageState extends State<TopicAllArticlesPage> {
   }
 
   bool _looselyMatchesTopic(NewsModel article) {
+    // Primary: check ctgId
+    if (article.ctgId != null &&
+        widget.topicSpec.ctgIdFilters.contains(article.ctgId)) {
+      return true;
+    }
+
+    // Fallback: keyword matching
     final haystack = [
       article.title,
       article.description ?? '',

@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:video_player/video_player.dart';
 
 class ArticleDetailPage extends StatefulWidget {
   final String? imageUrl;
@@ -22,7 +21,6 @@ class ArticleDetailPage extends StatefulWidget {
   final String description;
   final String? content;
   final List<ContentItem>? contentItems;
-  final String? videoUrl;
   final List<NewsModel>? relatedArticles;
   final bool autoPlayTtsOnOpen;
 
@@ -36,7 +34,6 @@ class ArticleDetailPage extends StatefulWidget {
     required this.description,
     this.content,
     this.contentItems,
-    this.videoUrl,
     this.relatedArticles,
     this.autoPlayTtsOnOpen = false,
   });
@@ -59,10 +56,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
   String? _displayContent;
   final FlutterTts _tts = FlutterTts();
   bool _didAutoPlayTts = false;
-  VideoPlayerController? _videoController;
-  Future<void>? _videoInitFuture;
-  String? _activeVideoUrl;
-  bool _videoFailed = false;
 
   double get _articleFontSize => FontService.bodyFontSize(_fontLevel);
 
@@ -79,7 +72,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
     publishedAt: null,
     articleUrl: widget.articleUrl,
     contentItems: widget.contentItems,
-    videoUrl: widget.videoUrl,
   );
 
   List<NewsModel> get _relatedArticles {
@@ -128,7 +120,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
           item.title == widget.title && item.sourceName == widget.sourceName,
     );
     HistoryService.addHistory(_currentArticle);
-    _initVideoIfNeeded(widget.videoUrl);
 
     if (widget.autoPlayTtsOnOpen) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -137,237 +128,29 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
     }
   }
 
-  @override
-  void didUpdateWidget(covariant ArticleDetailPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.videoUrl != widget.videoUrl) {
-      _initVideoIfNeeded(widget.videoUrl);
-    }
-  }
-
-  String? _normalizeVideoUrl(String? rawUrl) {
+  String? _normalizeImageUrl(String? rawUrl) {
     final value = rawUrl?.trim();
     if (value == null || value.isEmpty) {
       return null;
     }
 
-    if (value.startsWith('//')) {
-      return 'https:$value';
-    }
-
-    if (value.startsWith('www.')) {
-      return 'https://$value';
-    }
-
-    final uri = Uri.tryParse(value);
-    if (uri == null) {
-      return null;
-    }
-
-    final scheme = uri.scheme.toLowerCase();
-    if (scheme == 'http' || scheme == 'https') {
-      return uri.toString();
-    }
-
-    return null;
-  }
-
-  Future<void> _initVideoIfNeeded(String? rawVideoUrl) async {
-    final normalized = _normalizeVideoUrl(rawVideoUrl);
-    if (normalized == _activeVideoUrl) {
-      return;
-    }
-
-    await _disposeVideoController();
-
-    if (normalized == null) {
-      if (mounted) {
-        setState(() {
-          _activeVideoUrl = null;
-          _videoInitFuture = null;
-          _videoFailed = false;
-        });
-      }
-      return;
+    var normalized = value;
+    if (normalized.startsWith('//')) {
+      normalized = 'https:$normalized';
+    } else if (normalized.startsWith('www.')) {
+      normalized = 'https://$normalized';
     }
 
     final uri = Uri.tryParse(normalized);
     if (uri == null) {
-      if (mounted) {
-        setState(() {
-          _activeVideoUrl = normalized;
-          _videoInitFuture = null;
-          _videoFailed = true;
-        });
-      }
-      return;
+      return normalized.toLowerCase();
     }
 
-    final controller = VideoPlayerController.networkUrl(uri);
-    final initFuture = controller.initialize();
-
-    setState(() {
-      _videoController = controller;
-      _activeVideoUrl = normalized;
-      _videoInitFuture = initFuture;
-      _videoFailed = false;
-    });
-
-    try {
-      await initFuture;
-      if (!mounted) return;
-      setState(() {
-        _videoFailed = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _videoFailed = true;
-      });
-    }
+    final safePath = uri.path.toLowerCase();
+    return '${uri.host.toLowerCase()}$safePath';
   }
 
-  Future<void> _disposeVideoController() async {
-    final old = _videoController;
-    _videoController = null;
-    _videoInitFuture = null;
-    _activeVideoUrl = null;
-    _videoFailed = false;
-    if (old != null) {
-      await old.dispose();
-    }
-  }
 
-  Future<void> _toggleInlineVideoPlayback() async {
-    final controller = _videoController;
-    if (controller == null || !controller.value.isInitialized) {
-      return;
-    }
-
-    if (controller.value.isPlaying) {
-      await controller.pause();
-    } else {
-      await controller.play();
-    }
-
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  Future<void> _openVideoExternally() async {
-    final url = _activeVideoUrl;
-    if (url == null) {
-      return;
-    }
-
-    final uri = Uri.tryParse(url);
-    if (uri == null) {
-      return;
-    }
-
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!launched && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to open video link.')),
-      );
-    }
-  }
-
-  Widget _buildVideoSection() {
-    if (_activeVideoUrl == null) {
-      return const SizedBox.shrink();
-    }
-
-    final controller = _videoController;
-    final initFuture = _videoInitFuture;
-    if (controller == null || initFuture == null) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: FutureBuilder<void>(
-        future: initFuture,
-        builder: (context, snapshot) {
-          final hasError = snapshot.hasError || _videoFailed;
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const SizedBox(
-              height: 220,
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          if (hasError || !controller.value.isInitialized) {
-            return Column(
-              children: [
-                Container(
-                  height: 160,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.videocam_off, size: 42),
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  onPressed: _openVideoExternally,
-                  icon: const Icon(Icons.open_in_new),
-                  label: const Text('Open Video'),
-                ),
-              ],
-            );
-          }
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: AspectRatio(
-                  aspectRatio: controller.value.aspectRatio <= 0
-                      ? (16 / 9)
-                      : controller.value.aspectRatio,
-                  child: VideoPlayer(controller),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _toggleInlineVideoPlayback,
-                      icon: Icon(
-                        controller.value.isPlaying
-                            ? Icons.pause
-                            : Icons.play_arrow,
-                      ),
-                      label: Text(
-                        controller.value.isPlaying ? 'Pause' : 'Play',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    tooltip: 'Open externally',
-                    onPressed: _openVideoExternally,
-                    icon: const Icon(Icons.open_in_new),
-                  ),
-                ],
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
 
   Future<void> _startTtsOnOpen() async {
     if (!mounted || _didAutoPlayTts) return;
@@ -517,29 +300,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
       offset += _cleanDescription.length + 2;
     }
     return offset;
-  }
-
-  String? _normalizeImageUrl(String? rawUrl) {
-    final value = rawUrl?.trim();
-    if (value == null || value.isEmpty) {
-      return null;
-    }
-
-    var normalized = value;
-    if (normalized.startsWith('//')) {
-      normalized = 'https:$normalized';
-    } else if (normalized.startsWith('www.')) {
-      normalized = 'https://$normalized';
-    }
-
-    final uri = Uri.tryParse(normalized);
-    if (uri == null) {
-      return normalized.toLowerCase();
-    }
-
-    final host = uri.host.toLowerCase();
-    final path = uri.path.toLowerCase().replaceAll(RegExp(r'/+$'), '');
-    return '$host$path';
   }
 
   Widget _buildHighlightedSection({
@@ -731,7 +491,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
     _isSpeaking = false;
     _ttsLoading = false;
     _tts.stop();
-    _videoController?.dispose();
     super.dispose();
   }
 
@@ -841,10 +600,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                 height: 240,
               ),
             ),
-            if (_activeVideoUrl != null) ...[
-              const SizedBox(height: 16),
-              _buildVideoSection(),
-            ],
             _buildHighlightedSection(
               text: _cleanDescription,
               sectionStartOffset: _descriptionStartOffset,
@@ -1014,7 +769,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
       sourceName: widget.sourceName,
       publishedAt: null,
       articleUrl: widget.articleUrl,
-      videoUrl: widget.videoUrl,
       contentItems: widget.contentItems,
     );
 

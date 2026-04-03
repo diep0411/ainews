@@ -36,8 +36,8 @@ class NewsModel {
   final String? sourceName;
   final String? publishedAt;
   final String? articleUrl;
-  final String? videoUrl;
   final List<ContentItem>? contentItems;
+  final int? ctgId;
 
   const NewsModel({
     required this.title,
@@ -47,8 +47,8 @@ class NewsModel {
     this.sourceName,
     this.publishedAt,
     this.articleUrl,
-    this.videoUrl,
     this.contentItems,
+    this.ctgId,
   });
 
   factory NewsModel.fromJson(Map<String, dynamic> json) {
@@ -65,7 +65,6 @@ class NewsModel {
           : json['src'] as String?,
       publishedAt: json['publishedAt'] as String?,
       articleUrl: json['url'] as String? ?? json['articleUrl'] as String?,
-      videoUrl: json['videoUrl'] as String?,
       contentItems: contentItemsRaw != null
           ? List<ContentItem>.from(
               contentItemsRaw.whereType<Map<String, dynamic>>().map(
@@ -73,6 +72,7 @@ class NewsModel {
               ),
             )
           : null,
+      ctgId: json['ctgId'] as int?,
     );
   }
 
@@ -85,8 +85,8 @@ class NewsModel {
     'sourceName': sourceName,
     'publishedAt': publishedAt,
     'articleUrl': articleUrl,
-    'videoUrl': videoUrl,
     'contentItems': contentItems?.map((item) => item.toJson()).toList() ?? [],
+    'ctgId': ctgId,
   };
 
   factory NewsModel.fromMap(Map<String, dynamic> map) {
@@ -100,7 +100,6 @@ class NewsModel {
       sourceName: map['sourceName'] as String?,
       publishedAt: map['publishedAt'] as String?,
       articleUrl: map['articleUrl'] as String?,
-      videoUrl: map['videoUrl'] as String?,
       contentItems: contentItemsRaw != null
           ? List<ContentItem>.from(
               contentItemsRaw.whereType<Map<String, dynamic>>().map(
@@ -108,6 +107,7 @@ class NewsModel {
               ),
             )
           : null,
+      ctgId: map['ctgId'] as int?,
     );
   }
 }

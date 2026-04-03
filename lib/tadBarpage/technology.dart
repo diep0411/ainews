@@ -5,14 +5,14 @@ import 'package:ai_new/services/news_service.dart';
 import 'package:ai_new/services/report_service.dart';
 import 'package:flutter/material.dart';
 
-class TechnologyPage extends StatefulWidget {
-  const TechnologyPage({super.key});
+class InternationalPage extends StatefulWidget {
+  const InternationalPage({super.key});
 
   @override
-  State<TechnologyPage> createState() => _TechnologyPageState();
+  State<InternationalPage> createState() => _InternationalPageState();
 }
 
-class _TechnologyPageState extends State<TechnologyPage> {
+class _InternationalPageState extends State<InternationalPage> {
   static const int _kTopPageSize = 5;
   static const double _kBottomPullThreshold = 72;
 
@@ -75,7 +75,7 @@ class _TechnologyPageState extends State<TechnologyPage> {
     });
 
     try {
-      final articles = await NewsService.fetchTechnologyArticles();
+      final articles = await NewsService.fetchInternationalArticles();
       if (!mounted) return;
       setState(() {
         _articles = articles;
@@ -123,7 +123,7 @@ class _TechnologyPageState extends State<TechnologyPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Unable to load technology news.',
+                'Unable to load international news.',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -146,7 +146,7 @@ class _TechnologyPageState extends State<TechnologyPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: const [
             SizedBox(height: 180),
-            Center(child: Text('No technology news available.')),
+            Center(child: Text('No international news available.')),
           ],
         ),
       );
@@ -193,8 +193,11 @@ class _TechnologyPageState extends State<TechnologyPage> {
                 child: Row(
                   children: const [
                     Text(
-                      'TECH NEWS',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                      'INTERNATIONAL',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -211,16 +214,27 @@ class _TechnologyPageState extends State<TechnologyPage> {
                       ),
                     ),
                   ),
-              const SizedBox(height: 8),
-              const Text(
-                'Latest Technology News',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              ...visibleArticles
-                  .skip(5)
-                  .take(7)
-                  .map(
+              ...() {
+                final lateArticles = [
+                  ...visibleArticles.take(
+                    (_topPage * _kTopPageSize).clamp(0, visibleArticles.length),
+                  ),
+                  ...visibleArticles.skip(
+                    ((_topPage + 1) * _kTopPageSize).clamp(
+                      0,
+                      visibleArticles.length,
+                    ),
+                  ),
+                ];
+                if (lateArticles.isEmpty) return <Widget>[];
+                return [
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Latest International News',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  ...lateArticles.map(
                     (article) => Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: NewsLateCard(
@@ -229,6 +243,8 @@ class _TechnologyPageState extends State<TechnologyPage> {
                       ),
                     ),
                   ),
+                ];
+              }(),
               if (_isPagingNext)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),

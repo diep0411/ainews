@@ -171,9 +171,9 @@ class NewsService {
     return parsed;
   }
 
-  static Future<List<NewsModel>> fetchClimateArticles() async {
+  static Future<List<NewsModel>> fetchTechnologieArticles() async {
     final articles = await fetchTopHeadlines();
-    return articles.where(_isClimateArticle).toList();
+    return articles.where(_isTechnologieArticle).toList();
   }
 
   static Future<List<NewsModel>> fetchBusinessArticles() async {
@@ -181,9 +181,9 @@ class NewsService {
     return articles.where(_isBusinessArticle).toList();
   }
 
-  static Future<List<NewsModel>> fetchTechnologyArticles() async {
+  static Future<List<NewsModel>> fetchInternationalArticles() async {
     final articles = await fetchTopHeadlines();
-    return articles.where(_isTechnologyArticle).toList();
+    return articles.where(_isInternationalArticle).toList();
   }
 
   static Set<String> _parseAllowedSources(Map<String, dynamic> config) {
@@ -218,6 +218,7 @@ class NewsService {
     final source = (item['src'] as String?)?.trim();
     final url = (item['url'] as String?)?.trim();
     final timestamp = item['tmU'];
+    final ctgId = item['ctgId'] as int?;
 
     final ctn = item['ctn'] as List<dynamic>? ?? const [];
     final textBlocks = ctn
@@ -230,7 +231,6 @@ class NewsService {
     final detailContent = textBlocks.join('\n\n').trim();
     final fallbackDescription = textBlocks.isNotEmpty ? textBlocks.first : null;
     final imageUrl = _extractImageUrl(item, ctn);
-    final videoUrl = _extractVideoUrl(item, ctn);
     final resolvedDescription = description.isNotEmpty
         ? description
         : fallbackDescription;
@@ -257,12 +257,12 @@ class NewsService {
       sourceName: source,
       publishedAt: publishedAt,
       articleUrl: (url != null && url.isNotEmpty) ? url : null,
-      videoUrl: videoUrl,
       contentItems: contentItemsRaw.isNotEmpty
           ? List<ContentItem>.from(
               contentItemsRaw.map((item) => ContentItem.fromJson(item)),
             )
           : null,
+      ctgId: ctgId,
     );
   }
 
@@ -287,34 +287,6 @@ class NewsService {
         continue;
       }
       return normalized;
-    }
-
-    return null;
-  }
-
-  static String? _extractVideoUrl(
-    Map<String, dynamic> item,
-    List<dynamic> ctn,
-  ) {
-    final candidates = <String?>[
-      item['videoUrl'] as String?,
-      item['video'] as String?,
-      item['vid'] as String?,
-      item['vurl'] as String?,
-    ];
-
-    for (final entry in ctn.whereType<Map<String, dynamic>>()) {
-      final type = (entry['type'] as String? ?? '').toUpperCase();
-      if (type == 'VIDEO' || type == 'VID') {
-        candidates.add(entry['content'] as String?);
-      }
-    }
-
-    for (final raw in candidates) {
-      final normalized = _normalizeRemoteUrl(raw);
-      if (normalized != null) {
-        return normalized;
-      }
     }
 
     return null;
@@ -347,16 +319,19 @@ class NewsService {
     return null;
   }
 
-  static bool _isClimateArticle(NewsModel article) {
-    return _matchesKeywords(article, _climateKeywords);
+  static bool _isTechnologieArticle(NewsModel article) {
+    // Use keyword matching for technology/technologie articles
+    return _matchesKeywords(article, _technologyKeywords);
   }
 
   static bool _isBusinessArticle(NewsModel article) {
-    return _matchesKeywords(article, _businessKeywords);
+    // Primary: check ctgId 37 = Business/Economy
+    return article.ctgId == 37;
   }
 
-  static bool _isTechnologyArticle(NewsModel article) {
-    return _matchesKeywords(article, _technologyKeywords);
+  static bool _isInternationalArticle(NewsModel article) {
+    // Primary: check ctgId 44 = War/Politics/International
+    return article.ctgId == 44;
   }
 
   static bool _matchesKeywords(NewsModel article, List<String> keywords) {

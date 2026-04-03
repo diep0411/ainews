@@ -51,9 +51,9 @@ class _HomepageState extends State<Homepage> {
             unselectedLabelColor: Colors.black54,
             tabs: [
               Tab(text: 'ALL'),
-              Tab(text: 'TECHNOLOGY'),
+              Tab(text: 'INTERNATIONAL'),
               Tab(text: 'BUSINESS'),
-              Tab(text: 'CLIMATE'),
+              Tab(text: 'TECHNOLOGIE'),
             ],
           ),
         ),
@@ -62,9 +62,9 @@ class _HomepageState extends State<Homepage> {
           child: TabBarView(
             children: [
               AllArticles(),
-              TechnologyPage(),
+              InternationalPage(),
               BusinessPage(),
-              ClimatePage(),
+              TechnologiePage(),
             ],
           ),
         ),

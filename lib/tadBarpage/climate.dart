@@ -5,14 +5,14 @@ import 'package:ai_new/services/news_service.dart';
 import 'package:ai_new/services/report_service.dart';
 import 'package:flutter/material.dart';
 
-class ClimatePage extends StatefulWidget {
-  const ClimatePage({super.key});
+class TechnologiePage extends StatefulWidget {
+  const TechnologiePage({super.key});
 
   @override
-  State<ClimatePage> createState() => _ClimatePageState();
+  State<TechnologiePage> createState() => _TechnologiePageState();
 }
 
-class _ClimatePageState extends State<ClimatePage> {
+class _TechnologiePageState extends State<TechnologiePage> {
   static const int _kTopPageSize = 5;
   static const double _kBottomPullThreshold = 72;
 
@@ -75,7 +75,7 @@ class _ClimatePageState extends State<ClimatePage> {
     });
 
     try {
-      final articles = await NewsService.fetchClimateArticles();
+      final articles = await NewsService.fetchTechnologieArticles();
       if (!mounted) return;
       setState(() {
         _articles = articles;
@@ -123,7 +123,7 @@ class _ClimatePageState extends State<ClimatePage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Unable to load climate news.',
+                'Unable to load technologie news.',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -146,7 +146,7 @@ class _ClimatePageState extends State<ClimatePage> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: const [
             SizedBox(height: 180),
-            Center(child: Text('No climate news available.')),
+            Center(child: Text('No technologie news available.')),
           ],
         ),
       );
@@ -193,8 +193,11 @@ class _ClimatePageState extends State<ClimatePage> {
                 child: Row(
                   children: const [
                     Text(
-                      'CLIMATE NEWS',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                      'TECHNOLOGIE',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -211,16 +214,27 @@ class _ClimatePageState extends State<ClimatePage> {
                       ),
                     ),
                   ),
-              const SizedBox(height: 8),
-              const Text(
-                'Latest Climate News',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              ...visibleArticles
-                  .skip(5)
-                  .take(7)
-                  .map(
+              ...() {
+                final lateArticles = [
+                  ...visibleArticles.take(
+                    (_topPage * _kTopPageSize).clamp(0, visibleArticles.length),
+                  ),
+                  ...visibleArticles.skip(
+                    ((_topPage + 1) * _kTopPageSize).clamp(
+                      0,
+                      visibleArticles.length,
+                    ),
+                  ),
+                ];
+                if (lateArticles.isEmpty) return <Widget>[];
+                return [
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Latest Technologie News',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  ...lateArticles.map(
                     (article) => Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: NewsLateCard(
@@ -229,6 +243,8 @@ class _ClimatePageState extends State<ClimatePage> {
                       ),
                     ),
                   ),
+                ];
+              }(),
               if (_isPagingNext)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),

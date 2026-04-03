@@ -6,21 +6,34 @@ import 'package:flutter/material.dart';
 class MenuPage extends StatelessWidget {
   const MenuPage({super.key});
 
+  static const Color _pageBg = Color( 0xFFFFFFFF);
+  static const Color _cardBg = Color(0xFFF6F3F2);
+  static const Color _sectionBlue = Color(0xFF1B4DD9);
+  static const Color _titleColor = Color(0xFF202125);
+  static const Color _iconColor = Color(0xFF8E93A8);
+  static const Color _subtleText = Color(0xFF8C93A8);
+  static const Color _dividerColor = Color(0xFFFFFFFF);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
+      backgroundColor: _pageBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F7F8),
+        backgroundColor: _pageBg,
         foregroundColor: Colors.black,
         elevation: 0,
+        scrolledUnderElevation: 0,
         title: const Text(
           'Settings',
-          style: TextStyle(fontWeight: FontWeight.w700),
+          style: TextStyle(
+            fontSize: 36 / 2,
+            fontWeight: FontWeight.w700,
+            color: _titleColor,
+          ),
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+        padding: const EdgeInsets.fromLTRB(22, 24, 22, 28),
         children: [
           _buildSectionHeader('CURATION'),
           _buildCard(
@@ -34,26 +47,26 @@ class MenuPage extends StatelessWidget {
               _buildDivider(),
               _buildMenuTile(
                 context: context,
-                icon: Icons.newspaper_outlined,
+                icon: Icons.folder_open_outlined,
                 title: 'News Sources',
                 onTap: () => _openPage(context, const Sourcespage()),
               ),
               _buildDivider(),
               _buildMenuTile(
                 context: context,
-                icon: Icons.history,
+                icon: Icons.history_outlined,
                 title: 'Histories',
                 onTap: () => _openPage(context, const HistoriesPage()),
               ),
             ],
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 42),
           _buildSectionHeader('GENERAL'),
           _buildCard(
             children: [
               _buildMenuTile(
                 context: context,
-                icon: Icons.public,
+                icon: Icons.language_outlined,
                 title: 'Language',
                 trailingText: 'ENGLISH (US)',
                 onTap: () {
@@ -69,7 +82,7 @@ class MenuPage extends StatelessWidget {
                 context: context,
                 icon: Icons.star_border,
                 title: 'Rate App',
-                trailingIcon: Icons.open_in_new,
+                trailingIcon: Icons.open_in_new_outlined,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -87,14 +100,14 @@ class MenuPage extends StatelessWidget {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 10),
+      padding: const EdgeInsets.only(left: 1, bottom: 12),
       child: Text(
         title,
-        style: const TextStyle(
-          color: Color(0xFF2F5BEA),
-          fontSize: 13,
+        style: TextStyle(
+          color: _sectionBlue,
+          fontSize: 12,
           fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
+          letterSpacing: 2.4,
         ),
       ),
     );
@@ -103,15 +116,15 @@ class MenuPage extends StatelessWidget {
   Widget _buildCard({required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(2),
       ),
       child: Column(children: children),
     );
   }
 
   Widget _buildDivider() {
-    return const Divider(height: 1, thickness: 3, color: Color(0xFFF0F0F0));
+    return const Divider(height: 7, thickness: 7, color: _dividerColor);
   }
 
   Widget _buildMenuTile({
@@ -124,30 +137,37 @@ class MenuPage extends StatelessWidget {
   }) {
     return ListTile(
       onTap: onTap,
-      minTileHeight: 62,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-      leading: Icon(icon, size: 24, color: Colors.grey.shade700),
+      minTileHeight: 64,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+      leading: Icon(icon, size: 21, color: _iconColor),
       title: Text(
         title,
-        style: const TextStyle(
-          fontSize: 17,
+        style: TextStyle(
+          fontSize: 31 / 2,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF191919),
+          color: _titleColor,
         ),
       ),
       trailing: trailingText != null
-          ? Text(
-              trailingText,
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  trailingText,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                const Icon(Icons.chevron_right, size: 18, color: _iconColor),
+              ],
             )
           : Icon(
               trailingIcon ?? Icons.chevron_right,
-              size: 22,
-              color: Colors.grey.shade400,
+              size: 18,
+              color: _iconColor,
             ),
     );
   }

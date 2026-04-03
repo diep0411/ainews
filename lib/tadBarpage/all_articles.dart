@@ -54,7 +54,6 @@ class _AllArticlesState extends State<AllArticles> {
           description: article.description ?? 'No description',
           content: article.content,
           contentItems: article.contentItems,
-          videoUrl: article.videoUrl,
           relatedArticles: articlePool,
         ),
       ),
@@ -216,7 +215,10 @@ class _AllArticlesState extends State<AllArticles> {
                   children: const [
                     Text(
                       'TOP HEADLINE',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -233,16 +235,27 @@ class _AllArticlesState extends State<AllArticles> {
                       ),
                     ),
                   ),
-              const SizedBox(height: 8),
-              const Text(
-                'Latest News',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              ...visibleArticles
-                  .skip(5)
-                  .take(7)
-                  .map(
+              ...() {
+                final lateArticles = [
+                  ...visibleArticles.take(
+                    (_topPage * _kTopPageSize).clamp(0, visibleArticles.length),
+                  ),
+                  ...visibleArticles.skip(
+                    ((_topPage + 1) * _kTopPageSize).clamp(
+                      0,
+                      visibleArticles.length,
+                    ),
+                  ),
+                ];
+                if (lateArticles.isEmpty) return <Widget>[];
+                return [
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Latest News',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  ...lateArticles.map(
                     (article) => Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: NewsLateCard(
@@ -251,6 +264,8 @@ class _AllArticlesState extends State<AllArticles> {
                       ),
                     ),
                   ),
+                ];
+              }(),
               if (_isPagingNext)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),

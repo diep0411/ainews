@@ -194,7 +194,10 @@ class _BusinessPageState extends State<BusinessPage> {
                   children: const [
                     Text(
                       'BUSINESS NEWS',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -211,16 +214,27 @@ class _BusinessPageState extends State<BusinessPage> {
                       ),
                     ),
                   ),
-              const SizedBox(height: 8),
-              const Text(
-                'Latest Business News',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              ...visibleArticles
-                  .skip(5)
-                  .take(7)
-                  .map(
+              ...() {
+                final lateArticles = [
+                  ...visibleArticles.take(
+                    (_topPage * _kTopPageSize).clamp(0, visibleArticles.length),
+                  ),
+                  ...visibleArticles.skip(
+                    ((_topPage + 1) * _kTopPageSize).clamp(
+                      0,
+                      visibleArticles.length,
+                    ),
+                  ),
+                ];
+                if (lateArticles.isEmpty) return <Widget>[];
+                return [
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Latest Business News',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  ...lateArticles.map(
                     (article) => Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: NewsLateCard(
@@ -229,6 +243,8 @@ class _BusinessPageState extends State<BusinessPage> {
                       ),
                     ),
                   ),
+                ];
+              }(),
               if (_isPagingNext)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),

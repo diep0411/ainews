@@ -22,7 +22,7 @@ class SavePage extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             title: const Text(
-              'Saved',
+              'Save',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             centerTitle: false,
@@ -130,7 +130,6 @@ class SavePage extends StatelessWidget {
               description: article.description ?? 'No description',
               content: article.content,
               contentItems: article.contentItems,
-              videoUrl: article.videoUrl,
               relatedArticles: SaveService.savedArticles,
             ),
           ),
