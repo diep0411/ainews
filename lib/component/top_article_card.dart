@@ -33,7 +33,9 @@ class TopArticleCard extends StatelessWidget {
               title: article.title,
               description: article.description ?? 'No description',
               content: article.content,
-              relatedArticles: articlePool,
+               contentItems: article.contentItems,
+               videoUrl: article.videoUrl,
+               relatedArticles: articlePool,
             ),
           ),
         );

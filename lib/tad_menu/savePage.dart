@@ -129,117 +129,92 @@ class SavePage extends StatelessWidget {
               title: article.title,
               description: article.description ?? 'No description',
               content: article.content,
+              contentItems: article.contentItems,
+              videoUrl: article.videoUrl,
               relatedArticles: SaveService.savedArticles,
             ),
           ),
         );
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ArticleImage(
-              imageUrl: article.imageUrl,
-              width: double.infinity,
-              height: 180,
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ArticleImage(
+            imageUrl: article.imageUrl,
+            width: double.infinity,
+            height: 180,
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 6),
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          article.sourceName ?? 'Unknown source',
-                          style: TextStyle(
-                            color: Colors.blue.shade800,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      if (article.publishedAt != null)
-                        Text(
-                          ArticleDateUtils.formatPublishedDate(
-                                article.publishedAt!,
-                              ) ??
-                              '',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 13,
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
                   Text(
-                    article.title,
-                    maxLines: 2,
-                    style: const TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.bold,
-                      height: 1.3,
+                    article.sourceName ?? 'Unknown source',
+                    style: TextStyle(
+                      color: Colors.blue.shade800,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  // Text(
-                  //   article.description ??
-                  //       article.content ??
-                  //       'Không có mô tả chi tiết.',
-                  //   maxLines: 3,
-                  //   overflow: TextOverflow.ellipsis,
-                  //   style: TextStyle(
-                  //     color: Colors.grey.shade700,
-                  //     fontSize: 15,
-                  //     height: 1.5,
-                  //   ),
-                  // ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        SaveService.savedAgoLabel(article),
-                        style: TextStyle(
-                          color: Colors.blue.shade700,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
+                  if (article.publishedAt != null)
+                    Text(
+                      ArticleDateUtils.formatPublishedDate(
+                            article.publishedAt!,
+                          ) ??
+                          '',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
                       ),
-                      Icon(
-                        Icons.bookmark,
-                        color: Colors.blue.shade700,
-                        size: 22,
-                      ),
-                    ],
+                    ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                article.title,
+                maxLines: 2,
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                  height: 1.3,
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Text(
+              //   article.description ??
+              //       article.content ??
+              //       'Không có mô tả chi tiết.',
+              //   maxLines: 3,
+              //   overflow: TextOverflow.ellipsis,
+              //   style: TextStyle(
+              //     color: Colors.grey.shade700,
+              //     fontSize: 15,
+              //     height: 1.5,
+              //   ),
+              // ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    SaveService.savedAgoLabel(article),
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  Icon(
+                    Icons.bookmark,
+                    color: Colors.blue.shade700,
+                    size: 22,
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -1,9 +1,11 @@
 import 'package:ai_new/component/newslate.dart';
 import 'package:ai_new/component/top_article_card.dart';
-import 'package:ai_new/component/top_paginator.dart';
+import 'package:ai_new/content.dart/all_content.dart';
 import 'package:ai_new/models/news_model.dart';
 import 'package:ai_new/services/news_service.dart';
 import 'package:ai_new/services/report_service.dart';
+import 'package:ai_new/tadBarpage/topic_sections.dart';
+import 'package:ai_new/utils/article_date_utils.dart';
 import 'package:flutter/material.dart';
 
 class AllArticles extends StatefulWidget {
@@ -15,12 +17,15 @@ class AllArticles extends StatefulWidget {
 
 class _AllArticlesState extends State<AllArticles> {
   static const int _kTopPageSize = 5;
+  static const double _kBottomPullThreshold = 72;
 
   final ScrollController _scrollController = ScrollController();
   List<NewsModel> _articles = [];
   bool _isLoading = true;
   String? _errorMessage;
   int _topPage = 0;
+  bool _isPagingNext = false;
+  double _bottomPullDistance = 0;
 
   @override
   void initState() {
@@ -34,6 +39,28 @@ class _AllArticlesState extends State<AllArticles> {
     super.dispose();
   }
 
+  void _openArticle(NewsModel article, List<NewsModel> articlePool) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ArticleDetailPage(
+          imageUrl: article.imageUrl,
+          sourceName: article.sourceName,
+          articleUrl: article.articleUrl,
+          time:
+              ArticleDateUtils.formatPublishedDate(article.publishedAt) ??
+              'Unknown time',
+          title: article.title,
+          description: article.description ?? 'No description',
+          content: article.content,
+          contentItems: article.contentItems,
+          videoUrl: article.videoUrl,
+          relatedArticles: articlePool,
+        ),
+      ),
+    );
+  }
+
   void _scrollToTop() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -44,23 +71,47 @@ class _AllArticlesState extends State<AllArticles> {
     }
   }
 
+  Future<void> _advanceTopPageAtBottom(int totalItems) async {
+    final totalPages = (totalItems / _kTopPageSize).ceil();
+    if (totalPages <= 1 || _isPagingNext) return;
+
+    setState(() {
+      _isPagingNext = true;
+    });
+
+    await Future<void>.delayed(const Duration(milliseconds: 550));
+    if (!mounted) return;
+
+    setState(() {
+      _topPage = (_topPage + 1) % totalPages;
+      _isPagingNext = false;
+      _bottomPullDistance = 0;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToTop());
+  }
+
   Future<void> _loadArticles() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
       _topPage = 0;
+      _isPagingNext = false;
+      _bottomPullDistance = 0;
     });
 
     try {
       final articles = await NewsService.fetchTopHeadlines();
+      if (!mounted) return;
       setState(() {
         _articles = articles;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.toString();
       });
     } finally {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
@@ -119,75 +170,95 @@ class _AllArticlesState extends State<AllArticles> {
 
     return RefreshIndicator(
       onRefresh: _loadArticles,
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 13),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: const [
-                  Text(
-                    'TOP HEADLINE',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                  ),
-                  Spacer(),
-                  Text(
-                    'View all',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.end,
-                  ),
-                ],
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification.metrics.axis != Axis.vertical) return false;
+
+          final atBottom = notification.metrics.extentAfter <= 1;
+
+          if (!atBottom) {
+            _bottomPullDistance = 0;
+            return false;
+          }
+
+          if (_isPagingNext) {
+            return false;
+          }
+
+          if (notification is OverscrollNotification &&
+              notification.overscroll > 0) {
+            _bottomPullDistance += notification.overscroll;
+            if (_bottomPullDistance >= _kBottomPullThreshold) {
+              _advanceTopPageAtBottom(visibleArticles.length);
+            }
+          } else if (notification is ScrollEndNotification) {
+            _bottomPullDistance = 0;
+          }
+
+          return false;
+        },
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              TopicSections(
+                articlePool: visibleArticles,
+                onOpenArticle: _openArticle,
               ),
-            ),
-            ...visibleArticles
-                .skip(_topPage * _kTopPageSize)
-                .take(_kTopPageSize)
-                .map(
-                  (article) => Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: TopArticleCard(
-                      article: article,
-                      articlePool: visibleArticles,
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'TOP HEADLINE',
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              ...visibleArticles
+                  .skip(_topPage * _kTopPageSize)
+                  .take(_kTopPageSize)
+                  .map(
+                    (article) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: TopArticleCard(
+                        article: article,
+                        articlePool: visibleArticles,
+                      ),
                     ),
                   ),
-                ),
-            TopPaginator(
-              currentPage: _topPage,
-              totalPages: (visibleArticles.length / _kTopPageSize).ceil(),
-              onPageChanged: (page) {
-                setState(() => _topPage = page);
-                _scrollToTop();
-              },
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Latest News',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            ...visibleArticles
-                .skip(5)
-                .take(7)
-                .map(
-                  (article) => Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: NewsLateCard(
-                      article: article,
-                      articlePool: visibleArticles,
+              const SizedBox(height: 8),
+              const Text(
+                'Latest News',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ...visibleArticles
+                  .skip(5)
+                  .take(7)
+                  .map(
+                    (article) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: NewsLateCard(
+                        article: article,
+                        articlePool: visibleArticles,
+                      ),
                     ),
                   ),
+              if (_isPagingNext)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
-            const SizedBox(height: 16),
-          ],
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );

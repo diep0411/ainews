@@ -56,19 +56,8 @@ class _HistoriesPageState extends State<HistoriesPage> {
                       onTap: () {
                         Navigator.pop(context);
                       },
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
-                              blurRadius: 6,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -86,12 +75,7 @@ class _HistoriesPageState extends State<HistoriesPage> {
                                     child: const Icon(Icons.image, size: 50),
                                   ),
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                14,
-                                12,
-                                14,
-                                14,
-                              ),
+                              padding: const EdgeInsets.only(top: 8),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -114,13 +98,12 @@ class _HistoriesPageState extends State<HistoriesPage> {
                                         '• ${HistoryService.accessedAgoLabel(item)}',
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: Colors.grey.shade600,
+                                          color: Colors.blue,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 10),
                                   Text(
                                     item.title,
                                     maxLines: 2,

@@ -40,9 +40,7 @@ class _HomepageState extends State<Homepage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const SearchPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const SearchPage()),
                 );
               },
             ),
@@ -59,9 +57,9 @@ class _HomepageState extends State<Homepage> {
             ],
           ),
         ),
-        body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5),
-          child: const TabBarView(
+        body: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 5),
+          child: TabBarView(
             children: [
               AllArticles(),
               TechnologyPage(),

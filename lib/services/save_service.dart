@@ -96,19 +96,19 @@ class SaveService {
 
   static String savedAgoLabel(NewsModel article) {
     final savedAt = _savedAtMillisByKey[_articleKey(article)];
-    if (savedAt == null) return 'Da luu gan day';
+    if (savedAt == null) return 'Saved recently';
 
     final diff = DateTime.now().difference(
       DateTime.fromMillisecondsSinceEpoch(savedAt),
     );
 
-    if (diff.inMinutes < 1) return 'Da luu vua xong';
-    if (diff.inHours < 1) return 'Da luu ${diff.inMinutes} phut truoc';
-    if (diff.inDays < 1) return 'Da luu ${diff.inHours} gio truoc';
-    if (diff.inDays < 7) return 'Da luu ${diff.inDays} ngay truoc';
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inHours < 1) return '${diff.inMinutes} minutes ago';
+    if (diff.inDays < 1) return '${diff.inHours} hours ago';
+    if (diff.inDays < 7) return '${diff.inDays} days ago';
 
     final weeks = (diff.inDays / 7).floor();
-    return 'Da luu $weeks tuan truoc';
+    return '$weeks weeks ago';
   }
 
   static Future<void> _persist() async {

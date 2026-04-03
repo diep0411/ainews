@@ -24,19 +24,19 @@ class HistoryService {
 
   static String accessedAgoLabel(NewsModel article) {
     final millis = _accessedAtMillisByKey[_articleKey(article)];
-    if (millis == null) return 'vua truy cap';
+    if (millis == null) return 'Just accessed';
 
     final diff = DateTime.now().difference(
       DateTime.fromMillisecondsSinceEpoch(millis),
     );
 
-    if (diff.inMinutes < 1) return 'vua truy cap';
-    if (diff.inHours < 1) return '${diff.inMinutes} phut truoc';
-    if (diff.inDays < 1) return '${diff.inHours} gio truoc';
-    if (diff.inDays < 7) return '${diff.inDays} ngay truoc';
+    if (diff.inMinutes < 1) return 'Just accessed';
+    if (diff.inHours < 1) return '${diff.inMinutes} minutes ago';
+    if (diff.inDays < 1) return '${diff.inHours} hours ago';
+    if (diff.inDays < 7) return '${diff.inDays} days ago';
 
     final weeks = (diff.inDays / 7).floor();
-    return '$weeks tuan truoc';
+    return '$weeks weeks ago';
   }
 
   static void clear() {

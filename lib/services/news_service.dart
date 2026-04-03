@@ -230,6 +230,7 @@ class NewsService {
     final detailContent = textBlocks.join('\n\n').trim();
     final fallbackDescription = textBlocks.isNotEmpty ? textBlocks.first : null;
     final imageUrl = _extractImageUrl(item, ctn);
+    final videoUrl = _extractVideoUrl(item, ctn);
     final resolvedDescription = description.isNotEmpty
         ? description
         : fallbackDescription;
@@ -245,6 +246,9 @@ class NewsService {
       _ => null,
     };
 
+    // Parse content items for structured display
+    final contentItemsRaw = ctn.whereType<Map<String, dynamic>>().toList();
+
     return NewsModel(
       title: title.isEmpty ? 'Untitled article' : title,
       description: resolvedDescription,
@@ -253,6 +257,12 @@ class NewsService {
       sourceName: source,
       publishedAt: publishedAt,
       articleUrl: (url != null && url.isNotEmpty) ? url : null,
+      videoUrl: videoUrl,
+      contentItems: contentItemsRaw.isNotEmpty
+          ? List<ContentItem>.from(
+              contentItemsRaw.map((item) => ContentItem.fromJson(item)),
+            )
+          : null,
     );
   }
 
@@ -277,6 +287,34 @@ class NewsService {
         continue;
       }
       return normalized;
+    }
+
+    return null;
+  }
+
+  static String? _extractVideoUrl(
+    Map<String, dynamic> item,
+    List<dynamic> ctn,
+  ) {
+    final candidates = <String?>[
+      item['videoUrl'] as String?,
+      item['video'] as String?,
+      item['vid'] as String?,
+      item['vurl'] as String?,
+    ];
+
+    for (final entry in ctn.whereType<Map<String, dynamic>>()) {
+      final type = (entry['type'] as String? ?? '').toUpperCase();
+      if (type == 'VIDEO' || type == 'VID') {
+        candidates.add(entry['content'] as String?);
+      }
+    }
+
+    for (final raw in candidates) {
+      final normalized = _normalizeRemoteUrl(raw);
+      if (normalized != null) {
+        return normalized;
+      }
     }
 
     return null;
